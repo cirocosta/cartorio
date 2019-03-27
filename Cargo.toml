@@ -1,0 +1,8 @@
+[package]
+name = "cartorio"
+version = "0.1.0"
+authors = ["Ciro S. Costa <cscosta@pivotal.io>"]
+edition = "2018"
+
+[dependencies]
+clap = "2.0"
