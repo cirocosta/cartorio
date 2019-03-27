@@ -1,0 +1,114 @@
+CLI
+
+	cartorio \
+		--image /images/something.tgz \
+		--image /images/something-else.tgz \
+		--images-dir /other-images \
+		--assets-dir /assets
+
+SERVER
+
+	1. support `docker pull`	
+
+		> An "image" is a combination of a JSON manifest and individual layer files.
+			> Layers are stored in as blobs in the V2 registry API, keyed by their digest
+		> The process of pulling an image centers around retrieving these two components.
+
+		docker pull localhost:5000/file
+
+				
+			VERSION CHECK
+
+			Provide version support information based on its response statuses.
+
+
+				-> GET /v2/
+
+					<- 200 OK
+					X-Content-Type-Options: nosniff
+					Docker-Distribution-Api-Version: registry/2.0 -------->  the "Docker-Distribution-API-Version" header SHOULD be set to "registry/2.0".
+
+						{}
+
+
+			    		   max size: 256; each field adhering to regex [a-z0-9]+(?:[._-][a-z0-9]+)*
+					   .---.                
+					   |   |                
+					   | .-+-----------------> repository name (could be `foo/bar[/...]` as well)
+					   | | |            .----> tag
+					   | | |            |   
+				-> GET /v2/file/manifests/latest
+									.--> tag or digest		[cc] start with only digest
+									|
+				   	GET /v2/${name}/manifests/{reference}
+
+				Accept: application/json
+				Accept: application/vnd.oci.image.manifest.v1+json
+				Accept: application/vnd.oci.image.index.v1+json
+				Accept: application/vnd.docker.distribution.manifest.v2+json
+				Accept: application/vnd.docker.distribution.manifest.list.v2+json
+				Accept: application/vnd.docker.distribution.manifest.v1+prettyjws
+				Accept-Encoding: gzip
+
+					<- 200 OK
+					Content-Length: 523
+					Content-Type: application/vnd.docker.distribution.manifest.v2+json
+					Docker-Content-Digest: sha256:7422e18d69adca5354c08f92dd18192fa142eda4cc891d093f22edbb38c4de1b ----+-->  any response MAY include a Docker-Content-Digest header
+					Docker-Distribution-Api-Version: registry/2.0							   |
+					Etag: "sha256:7422e18d69adca5354c08f92dd18192fa142eda4cc891d093f22edbb38c4de1b"		           *-->  For blobs, this is the entire blob content. 
+					           												 For manifests, this is the manifest body without the signature content, 
+																		 also known as the JWS payload
+
+
+						{
+						   "schemaVersion": 2,
+						   "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+						   "config": {
+						      "mediaType": "application/vnd.docker.container.image.v1+json",
+						      "size": 1192,
+						      "digest": "sha256:ffb7f1f129f1af63aa06ed2950dc649e46a6953823d7d77a0cd1b89721045a8c"
+						   },
+						   "layers": [
+						      {
+							 "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+							 "size": 93,
+							 "digest": "sha256:f4f156284cbb2d01008e438261ecfd88b6b766698510149d08d8aa8894765596"
+						      }
+						   ]
+						}
+
+
+										digest      := algorithm ":" hex
+										algorithm   := /[A-Fa-f0-9_+.-]+/
+										hex         := /[A-Fa-f0-9]+/
+							digest: serialized hash result, consisting of a algorithm and hex portion
+						      .---------------------------------------------------------------------.	 compliant implementations SHOULD use sha256.
+						      |									    |		[cc]: assume only sha256, otherwise, fail
+				-> GET /v2/file/blobs/sha256:f4f156284cbb2d01008e438261ecfd88b6b766698510149d08d8aa8894765596 HTTP/1.1
+
+					<- 200 OK
+					Accept-Ranges: bytes
+					Cache-Control: max-age=31536000
+					Content-Length: 93
+					Content-Type: application/octet-stream
+					Docker-Content-Digest: sha256:f4f156284cbb2d01008e438261ecfd88b6b766698510149d08d8aa8894765596
+					Docker-Distribution-Api-Version: registry/2.0
+					Etag: "sha256:f4f156284cbb2d01008e438261ecfd88b6b766698510149d08d8aa8894765596"
+
+						.. content (layer)
+
+
+				-> GET /v2/file/blobs/sha256:ffb7f1f129f1af63aa06ed2950dc649e46a6953823d7d77a0cd1b89721045a8c HTTP/1.1
+
+					<- 200 OK
+					Accept-Ranges: bytes
+					Cache-Control: max-age=31536000
+					Content-Length: 1192
+					Content-Type: application/octet-stream
+					Docker-Content-Digest: sha256:ffb7f1f129f1af63aa06ed2950dc649e46a6953823d7d77a0cd1b89721045a8c
+					Docker-Distribution-Api-Version: registry/2.0
+					Etag: "sha256:ffb7f1f129f1af63aa06ed2950dc649e46a6953823d7d77a0cd1b89721045a8c"
+					X-Content-Type-Options: nosniff
+
+						{ image config }
+
