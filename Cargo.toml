@@ -5,4 +5,5 @@ authors = ["Ciro S. Costa <cscosta@pivotal.io>"]
 edition = "2018"
 
 [dependencies]
+hyper = "0.12"
 clap = "2.0"
