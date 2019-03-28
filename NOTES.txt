@@ -5,6 +5,11 @@ VALUES
 	- small footprint
 
 
+TODO
+
+	- [x] /_live
+	- [ ] get /v2
+
 
 CLI
 
@@ -40,7 +45,8 @@ SERVER
 
 					<- 200 OK
 					X-Content-Type-Options: nosniff
-					Docker-Distribution-Api-Version: registry/2.0 -------->  the "Docker-Distribution-API-Version" header SHOULD be set to "registry/2.0".
+					Docker-Distribution-Api-Version: registry/2.0 -------->  the "Docker-Distribution-API-Version" 
+												 header SHOULD be set to "registry/2.0".
 
 						{}
 
