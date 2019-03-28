@@ -8,8 +8,27 @@ VALUES
 TODO
 
 	- [x] /_live
-	- [ ] get /v2
+	- [x] GET /v2
+	- [ ] structured logging ("zero-cost"?)
+	- [ ] /v2/<name>/manifests/<reference>
+		- [ ] path segmentation
+			- `split` on `/`, then manually perform the parsing
 
+		- [ ] how are we going to store this on the filesystem?
+			- do images come with this? *probably*
+
+		- [ ] GET
+			- start with plain 404
+			
+
+		- [ ] HEAD
+			- start with plain 404
+
+			later:
+
+			200 OK
+			Content-Length: <length of manifest>
+			Docker-Content-Digest: <digest>
 
 CLI
 
