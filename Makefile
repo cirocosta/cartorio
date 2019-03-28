@@ -1,7 +1,6 @@
 run-registry:
-	docker run \
-		--detach \
-		--publish 5000:5000 \
-		--restart always \
-		--name registry \
-		registry:2
+	cd ./assets/registry && \
+		docker-compose up --build -d
+
+capture:
+	docker exec registry tshark -d tcp.port==5000,http

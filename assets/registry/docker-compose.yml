@@ -1,0 +1,8 @@
+version: '3'
+
+services:
+  registry:
+    container_name: registry
+    build: . 
+    ports: [ '5000:5000' ]
+    volumes: [ './:/mnt' ]

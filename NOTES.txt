@@ -1,7 +1,7 @@
 VALUES
 
 	- *fast*
-	- trivial to set up
+	 trivial to set up
 	- small footprint
 
 
@@ -11,8 +11,16 @@ TODO
 	- [x] GET /v2
 	- [ ] structured logging ("zero-cost"?)
 	- [ ] /v2/<name>/manifests/<reference>
+
 		- [ ] path segmentation
 			- `split` on `/`, then manually perform the parsing
+
+				1. go until the last one
+				2. the last is the reference	(KEEP TRACK OF IT)
+				3. one before the last is just `manifests`
+				4. everything before `manifests` until the `first` (`/v2`) is the name.
+								(KEEP TRACK OF IT)
+
 
 		- [ ] how are we going to store this on the filesystem?
 			- do images come with this? *probably*

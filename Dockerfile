@@ -5,6 +5,7 @@ FROM rust:1.33 AS base
 	WORKDIR /usr/src/myapp
 	COPY . .
 
+	RUN cargo test
 	RUN cargo build --release --target x86_64-unknown-linux-musl
 
 
