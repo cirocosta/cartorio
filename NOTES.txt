@@ -1,3 +1,11 @@
+VALUES
+
+	- *fast*
+	- trivial to set up
+	- small footprint
+
+
+
 CLI
 
 	cartorio \
@@ -6,7 +14,13 @@ CLI
 		--images-dir /other-images \
 		--assets-dir /assets
 
+
 SERVER
+
+	SPEC
+
+		https://github.com/opencontainers/distribution-spec/blob/master/spec.md
+
 
 	1. support `docker pull`	
 
