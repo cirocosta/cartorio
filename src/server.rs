@@ -9,15 +9,14 @@ const BODY_NOT_FOUND: &str = "not found";
 
 /// Represents a manifest path.
 ///
-struct ManifestPath {
+struct BlobPath {
     name: String,
     reference: String,
 }
 
-/// Detects whether the provided `path` is a `ManifestPath` and,
-/// if so, returns a `ManifestPath`.
+/// Parses a path into a BlobPath.
 ///
-fn parse_manifests_path(path: &str) -> Option<ManifestPath> {
+fn parse_generic_blob_path(path_type: &'static str, path: &str) -> Option<BlobPath> {
     let splitted: Vec<&str> = path.trim_matches('/').split("/").collect();
 
     if splitted.len() < 4 {
@@ -28,17 +27,46 @@ fn parse_manifests_path(path: &str) -> Option<ManifestPath> {
         return None;
     }
 
-    if splitted[splitted.len() - 2] != "manifests" {
+    if splitted[splitted.len() - 2] != path_type {
         return None;
     }
 
     let reference = splitted[splitted.len() - 1];
     let name = &splitted[1..splitted.len() - 2];
 
-    Some(ManifestPath {
+    Some(BlobPath {
         name: name.join("/"),
         reference: reference.to_string(),
     })
+}
+
+/// Detects whether the provided `path` is a `BlobPath` and,
+/// if so, returns a `BlobPath`.
+///
+fn parse_manifests_path(path: &str) -> Option<BlobPath> {
+    parse_generic_blob_path("manifests", path)
+}
+
+fn parse_blobs_path(path: &str) -> Option<BlobPath> {
+    parse_generic_blob_path("blobs", path)
+}
+
+fn handle_registry_blobs(req: &Request<Body>) -> Option<Response<Body>> {
+    if req.method() != &Method::GET {
+        return None;
+    }
+
+    let blobInfo = match parse_blobs_path(req.uri().path()) {
+        Some(m) => m,
+        _ => return None,
+    };
+
+    Some(
+        Response::builder()
+            .status(StatusCode::OK)
+            .body(Body::from("unimplemented yet"))
+            .unwrap(),
+    )
 }
 
 fn handle_registry_manifests(req: &Request<Body>) -> Option<Response<Body>> {
@@ -46,7 +74,7 @@ fn handle_registry_manifests(req: &Request<Body>) -> Option<Response<Body>> {
         return None;
     }
 
-    let manifestPath = match parse_manifests_path(req.uri().path()) {
+    let manifestInfo = match parse_manifests_path(req.uri().path()) {
         Some(m) => m,
         _ => return None,
     };
