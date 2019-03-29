@@ -1,7 +1,7 @@
 VALUES
 
 	- *fast*
-	 trivial to set up
+	- trivial to set up
 	- small footprint
 
 
@@ -10,9 +10,10 @@ TODO
 	- [x] /_live
 	- [x] GET /v2
 	- [ ] structured logging ("zero-cost"?)
+	- [ ] untar'ing of images that have been `docker save`d
 	- [ ] /v2/<name>/manifests/<reference>
 
-		- [ ] path segmentation
+		- [x] path segmentation
 			- `split` on `/`, then manually perform the parsing
 
 				1. go until the last one
@@ -26,25 +27,19 @@ TODO
 			- do images come with this? *probably*
 
 		- [ ] GET
-			- start with plain 404
-			
-
 		- [ ] HEAD
-			- start with plain 404
 
-			later:
-
-			200 OK
-			Content-Length: <length of manifest>
-			Docker-Content-Digest: <digest>
 
 CLI
 
 	cartorio \
-		--image /images/something.tgz \
-		--image /images/something-else.tgz \
+		--address ? \
+		--image /images/something.tar \
+		--image /images/something-else.tar \
 		--images-dir /other-images \
 		--assets-dir /assets
+
+		??
 
 
 SERVER
@@ -68,7 +63,7 @@ SERVER
 			Provide version support information based on its response statuses.
 
 
-				-> GET /v2/
+				-> GET /v2
 
 					<- 200 OK
 					X-Content-Type-Options: nosniff
@@ -158,4 +153,75 @@ SERVER
 					X-Content-Type-Options: nosniff
 
 						{ image config }
+
+
+
+	DOCKER SAVEd IMAGES
+
+	TAR
+
+		.
+		├── 48e2eeb489cdea15786d3622270750508d7385f3b684306703d17ffd50ecd34a.json --> image configuration
+		├── 4dc05cb02b54b373232011f781f8a98905d3e10575f2a399094f704d14913a7d	   .-
+		│   ├── VERSION								   |   LAYER
+		│   ├── json                     					   |	
+		│   └── layer.tar    							   *-
+		├── manifest.json							  --> image manifest
+		└── repositories							  (tagging + image name configuration)
+
+
+	IN THE FS
+
+		.
+		├── blobs
+		│   ├── sha256:48e2eeb489cdea15786d3622270750508d7385f3b684306703d17ffd50ecd34a
+		│   └── sha256:4dc05cb02b54b373232011f781f8a98905d3e10575f2a399094f704d14913a7d
+		│ 
+		├── manifests
+		│   └── library	
+		│       └─ nginx
+		│           ├── latest
+		│           └── sha256:4dc05cb02b54b373232011f781f8a98905d3e10575f2a399094f704d14913a7d
+		│ 
+		└── index ?
+
+
+
+	manifest.json
+
+		[
+		  {
+		    "Config": "48e2eeb489cdea15786d3622270750508d7385f3b684306703d17ffd50ecd34a.json",
+		    "RepoTags": [
+		      "a:latest"   --> tagged info  TODO: how to use this for something useful?
+		    ],
+		    "Layers": [
+		      "4dc05cb02b54b373232011f781f8a98905d3e10575f2a399094f704d14913a7d/layer.tar" --> " within the tar, here's where you find the layer
+		    ]
+		  }
+		]
+
+			--> then, the newly formed digest:
+
+		{
+			"schemaVersion": 2,
+			"config": {
+				"mediaType": "application/vnd.oci.image.config.v1+json",
+				"size": <computed>,
+				"digest": "sha256:48e2eeb489cdea15786d3622270750508d7385f3b684306703d17ffd50ecd34a"
+			},
+			"layers": [
+				{
+					"mediaType": "application/vnd.oci.image.layer.v1.tar",   // maybe we don't 
+					"size": <computed>,
+					"digest": "sha256:4dc..."
+				}
+			],
+			"annotations": { }
+		}
+
+			--> this newly formed manifest will have a *different* digest, which should be
+			    returned to the user in order to be consumed from k8s/docker.
+
+
 

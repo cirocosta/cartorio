@@ -1,11 +1,15 @@
 # cartório
 
-> A [OCI Distribution Spec](https://github.com/opencontainers/distribution-spec) registry for air gapped environments.
+> A [OCI Distribution Spec](https://github.com/opencontainers/distribution-spec) registry to serve [OCI Images](https://github.com/opencontainers/image-spec) for air gapped environments.
 
 
-## Goals
+## Scope
 
-- Provide a container image registry to be consumed by Kubernetes installations that need can't have access to the Internet
+
+
+## Usage
+
+TODO
 
 
 ## LICENSE
