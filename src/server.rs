@@ -74,7 +74,7 @@ fn handle_registry_manifests(req: &Request<Body>) -> Option<Response<Body>> {
         return None;
     }
 
-    let manifestInfo = match parse_manifests_path(req.uri().path()) {
+    let manifest_info = match parse_manifests_path(req.uri().path()) {
         Some(m) => m,
         _ => return None,
     };
@@ -123,6 +123,8 @@ fn route(req: Request<Body>) -> Response<Body> {
     } else if let Some(resp) = handle_registry_version_check(&req) {
         return resp;
     } else if let Some(resp) = handle_registry_manifests(&req) {
+        return resp;
+    } else if let Some(resp) = handle_registry_blobs(&req) {
         return resp;
     }
 
