@@ -179,15 +179,9 @@ SERVER
 		│   ├── sha256:sha256(manifest_generated)		(manifest)
 		│   └── sha256:4dc0.......				(layer)
 		│   └── sha256:48e2eeb489...				(config)
-		│
-		├── blobs
-		│   └── library	
-		│       └─ nginx
-		│	    ├── sha256:48e2eeb489cde....03d17ffd50ecd34a -> ../../bucket/sha256:48e2eeb48.... 	(config)
-		│	    └── sha256:4dc05cb02b54b....4d14913a7d -> ../../bucket/sha256:4dc0...	 	(layer)
 		│ 
 		└── manifests
-		    └── library	
+		    └── library
 		        └─ nginx
 		            ├── latest -> ../../bucket/sha256:sha256(manifest_generated)
 		            └── sha256:sha256(manifest_generated) --> ../../bucket/sha256:sha256(manifest_generated)

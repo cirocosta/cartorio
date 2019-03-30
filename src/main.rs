@@ -21,9 +21,8 @@ fn main() {
                         .short("b")
                         .long("blobstore")
                         .help("Directory where blobs, manifests and configurations are saved to"),
-                    Arg::with_name("tarballs")
+                    Arg::with_name("tarball")
                         .required(true)
-                        .multiple(true)
                         .long("tarball")
                         .short("t")
                         .help("Tarball to load into the registry"),
@@ -49,9 +48,9 @@ fn main() {
 
     match matches.subcommand() {
         ("load", Some(m)) => {
-            loader::load(
+            loader::load_tarball(
                 &value_t!(m, "blobstore", String).unwrap(),
-                m.values_of("tarballs").unwrap().collect(),
+                &value_t!(m, "tarball", String).unwrap(),
             );
         }
 

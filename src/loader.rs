@@ -1,8 +1,11 @@
 extern crate serde;
 extern crate serde_json;
+extern crate tar;
+extern crate tempfile;
 
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
+use tempfile::tempdir;
 
 /// Represents the configuration exposed by `docker save`d  tarballs.
 ///
@@ -21,6 +24,13 @@ struct DockerSavedManifest {
     config: String,
     repo_tags: Vec<String>,
     layers: Vec<String>,
+}
+
+fn prepend_sha_scheme(digest: &str) -> String {
+    let mut res = String::with_capacity(2);
+    res.push_str("sha256:");
+    res.push_str(digest);
+    res.to_string()
 }
 
 impl DockerSavedManifest {
@@ -150,8 +160,81 @@ impl BlobStore {
             .recursive(true)
             .create(&self.manifests_dir)
     }
+
+    /// Loads the contents of a tarball that has been extracted into
+    /// a directory.
+    ///
+    /// # Arguments
+    ///
+    /// * `directory` - the directory where the extracted contents of the
+    /// tarball lives.
+    ///
+    ///
+    fn load_unpacked_tarball(&self, tarball_directory: &Path) {
+        let manifests =
+            parse_docker_save_manifest(tarball_directory.join("manifest.json").to_str().unwrap())
+                .unwrap();
+
+        for manifest in manifests {
+            self.move_tarball_content_to_bucket(&tarball_directory, &manifest);
+        }
+    }
+
+    /// Moves the contents that are referenced in the manifest over
+    /// to the blobs directory.
+    ///
+    /// # Arguments
+    ///
+    /// * `manifest` - the manifest that describes the contents to be moved.
+    /// * `tarball_directory` - directory where the docker tarball contents
+    ///                         were extracted to.
+    ///
+    fn move_tarball_content_to_bucket(
+        &self,
+        tarball_directory: &Path,
+        manifest: &DockerSavedManifest,
+    ) {
+        // moving `config` over to `bucket`
+        let config_tarball_path = tarball_directory.join(&manifest.config);
+        let config_bucket_path = self
+            .bucket_dir
+            .join(prepend_sha_scheme(&manifest.config_digest()));
+
+        std::fs::rename(config_tarball_path, config_bucket_path);
+
+        // move each `layer` to the bucket
+        for layer in &manifest.layers {
+            let layer_tarball_path = tarball_directory.join(&layer).join("layer.tar");
+            let layer_bucket_path =
+                self.bucket_dir
+                    .join(prepend_sha_scheme(DockerSavedManifest::layer_digest(
+                        &layer,
+                    )));
+
+            std::fs::rename(layer_tarball_path, layer_bucket_path);
+        }
+    }
 }
 
-pub fn load(_blobstore: &str, _tarballs: Vec<&str>) {
+/// Loads tarballs from `docker save` into the cartorio's
+/// filesystem hierarchy created at root directory.
+///
+/// # Arguments
+///
+/// * `blobstore_dir` - directory where the registry file hierarchy gets created.
+/// * `tarballs` - list of tarballs to load.
+///
+pub fn load_tarball(blobstore_dir: &str, tarball: &str) {
+    let blobstore = BlobStore::new(blobstore_dir);
 
+    assert!(blobstore.create_directories().is_ok());
+
+    let tarball_tmp_dir = tempdir().unwrap();
+    let tarball_file = std::fs::File::open(tarball).unwrap();
+
+    tar::Archive::new(tarball_file)
+        .unpack(tarball_tmp_dir.path())
+        .unwrap();
+
+    blobstore.load_unpacked_tarball(tarball_tmp_dir.path());
 }
