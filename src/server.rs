@@ -51,12 +51,64 @@ fn parse_blobs_path(path: &str) -> Option<BlobPath> {
     parse_generic_blob_path("blobs", path)
 }
 
+
+#[cfg(test)]
+mod parsing_tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_manifests_path() {
+        assert!(
+            parse_manifests_path("xxx").is_none(),
+            "must have a `/v2` in the prefix`"
+        );
+
+        assert!(
+            parse_manifests_path("/v2/library/manifests").is_none(),
+            "must have enough fields"
+        );
+
+        assert!(
+            parse_manifests_path("/v2/library/wrong/tag").is_none(),
+            "must have `manifests` after name and before reference"
+        );
+
+        assert_eq!(
+            parse_manifests_path("/v2/library/manifests/tag")
+                .unwrap()
+                .name,
+            "library",
+        );
+
+        assert_eq!(
+            parse_manifests_path("/v2/library/manifests/tag")
+                .unwrap()
+                .reference,
+            "tag",
+        );
+
+        assert_eq!(
+            parse_manifests_path("/v2/library/nginx/manifests/tag")
+                .unwrap()
+                .name,
+            "library/nginx",
+        );
+
+        assert_eq!(
+            parse_manifests_path("/v2/library/nginx/manifests/sha256:7422e18d69adca5354c08f92dd18192fa142eda4cc891d093f22edbb38c4de1b")
+                .unwrap()
+                .reference,
+            "sha256:7422e18d69adca5354c08f92dd18192fa142eda4cc891d093f22edbb38c4de1b",
+        );
+    }
+}
+
 fn handle_registry_blobs(req: &Request<Body>) -> Option<Response<Body>> {
     if req.method() != &Method::GET {
         return None;
     }
 
-    let blobInfo = match parse_blobs_path(req.uri().path()) {
+    let _blob_info = match parse_blobs_path(req.uri().path()) {
         Some(m) => m,
         _ => return None,
     };
@@ -74,7 +126,7 @@ fn handle_registry_manifests(req: &Request<Body>) -> Option<Response<Body>> {
         return None;
     }
 
-    let manifest_info = match parse_manifests_path(req.uri().path()) {
+    let _manifest_info = match parse_manifests_path(req.uri().path()) {
         Some(m) => m,
         _ => return None,
     };
@@ -134,11 +186,20 @@ fn route(req: Request<Body>) -> Response<Body> {
         .unwrap()
 }
 
-/// Starts an HTTP server at an address specified as `address`.
+/// Starts the HTTP server for serving the registry's content.
 ///
-pub fn serve(address: &str) {
-    let handlers: &[&Fn(&Request<Body>) -> Option<Response<Body>>] = &[&handle_liveness_check];
-
+/// # Arguments
+///
+/// * `address` - IPV4 address to bind to listen for requests
+/// * `blobstore` - path where all blobs, manifests and configurations exist.
+///
+///
+/// # Remarks
+///
+/// The contents of the `blobstore` must have been initialized beforehand.
+/// See `loader`.
+///
+pub fn serve(address: &str, _blobstore: &str) {
     let addr: SocketAddr = address.parse().unwrap();
 
     let server = Server::bind(&addr)
@@ -149,53 +210,3 @@ pub fn serve(address: &str) {
     hyper::rt::run(server);
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_manifests_path() {
-        assert!(
-            parse_manifests_path("xxx").is_none(),
-            "must have a `/v2` in the prefix`"
-        );
-
-        assert!(
-            parse_manifests_path("/v2/library/manifests").is_none(),
-            "must have enough fields"
-        );
-
-        assert!(
-            parse_manifests_path("/v2/library/wrong/tag").is_none(),
-            "must have `manifests` after name and before reference"
-        );
-
-        assert_eq!(
-            parse_manifests_path("/v2/library/manifests/tag")
-                .unwrap()
-                .name,
-            "library",
-        );
-
-        assert_eq!(
-            parse_manifests_path("/v2/library/manifests/tag")
-                .unwrap()
-                .reference,
-            "tag",
-        );
-
-        assert_eq!(
-            parse_manifests_path("/v2/library/nginx/manifests/tag")
-                .unwrap()
-                .name,
-            "library/nginx",
-        );
-
-        assert_eq!(
-            parse_manifests_path("/v2/library/nginx/manifests/sha256:7422e18d69adca5354c08f92dd18192fa142eda4cc891d093f22edbb38c4de1b")
-                .unwrap()
-                .reference,
-            "sha256:7422e18d69adca5354c08f92dd18192fa142eda4cc891d093f22edbb38c4de1b",
-        );
-    }
-}

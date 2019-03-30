@@ -151,3 +151,7 @@ impl BlobStore {
             .create(&self.manifests_dir)
     }
 }
+
+pub fn load(_blobstore: &str, _tarballs: Vec<&str>) {
+
+}
