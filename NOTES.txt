@@ -161,29 +161,62 @@ SERVER
 	TAR
 
 		.
-		├── 48e2eeb489cdea15786d3622270750508d7385f3b684306703d17ffd50ecd34a.json --> image configuration
-		├── 4dc05cb02b54b373232011f781f8a98905d3e10575f2a399094f704d14913a7d	   .-
-		│   ├── VERSION								   |   LAYER
-		│   ├── json                     					   |	
-		│   └── layer.tar    							   *-
-		├── manifest.json							  --> image manifest
-		└── repositories							  (tagging + image name configuration)
+		├── 48e2eeb489...5f3b684306703d17ffd50ecd34a.json --> image configuration
+		├── 4dc05cb02b...10575f2a399094f704d14913a7d	   .-
+		│   ├── VERSION					   |   LAYER
+		│   ├── json    				   |	
+		│   └── layer.tar    				   *-
+		├── manifest.json				  --> image manifest
+		└── repositories				  (tagging + image name configuration)
 
 
 	IN THE FS
 
+		(blobstore)
 		.
+		│
+		├── bucket
+		│   ├── sha256:sha256(manifest_generated)		(manifest)
+		│   └── sha256:4dc0.......				(layer)
+		│   └── sha256:48e2eeb489...				(config)
+		│
 		├── blobs
-		│   ├── sha256:48e2eeb489cdea15786d3622270750508d7385f3b684306703d17ffd50ecd34a
-		│   └── sha256:4dc05cb02b54b373232011f781f8a98905d3e10575f2a399094f704d14913a7d
-		│ 
-		├── manifests
 		│   └── library	
 		│       └─ nginx
-		│           ├── latest
-		│           └── sha256:4dc05cb02b54b373232011f781f8a98905d3e10575f2a399094f704d14913a7d
+		│	    ├── sha256:48e2eeb489cde....03d17ffd50ecd34a -> ../../bucket/sha256:48e2eeb48.... 	(config)
+		│	    └── sha256:4dc05cb02b54b....4d14913a7d -> ../../bucket/sha256:4dc0...	 	(layer)
 		│ 
-		└── index ?
+		└── manifests
+		    └── library	
+		        └─ nginx
+		            ├── latest -> ../../bucket/sha256:sha256(manifest_generated)
+		            └── sha256:sha256(manifest_generated) --> ../../bucket/sha256:sha256(manifest_generated)
+
+
+	CONVERSION:
+		
+		1. parse manifest.json
+
+		2. from `config` --> move file from tar location to blobstore with the right name
+
+			let config_file_name = basename(config_file_path);
+			let config_digest = config_file_name.split(".").take_first();
+
+			move_file(config_file_path, blobstore.bucket_path(config_digest))	
+			move_file(config_file_path, blobstore.blobs_path(config_digest))	
+
+
+
+		3. for each layer, move file from tar location to blobstore with the right name
+
+			let layer_digest = dirname(location);
+			let bucket_path = blobstore.bucket_path(layer_digest);	
+
+			move_file(layer_file_path, bucket_path);
+
+
+		4. create a registry manifest
+
 
 
 
