@@ -106,25 +106,40 @@ mod parsing_tests {
     }
 }
 
+
+const BLOBSTORE_PATH: &'static str = "/tmp/stuff1";
+
 fn handle_registry_blobs(req: &Request<Body>) -> Option<Response<Body>> {
     if req.method() != &Method::GET {
         return None;
     }
 
-    let _blob_info = match parse_blobs_path(req.uri().path()) {
+    let blob_info = match parse_blobs_path(req.uri().path()) {
         Some(m) => m,
         _ => return None,
     };
 
+
+    let file_path = Path::new(BLOBSTORE_PATH)
+            .join("bucket")
+            .join(&blob_info.reference);
+
+    let blob_size = std::fs::metadata(&file_path).unwrap().len();
+
+    let file = FsPool::default().read(file_path, Default::default());
+
     Some(
         Response::builder()
+            .header("content-type", "application/octet-stream")
+            .header("docker-content-digest", blob_info.reference.as_bytes())
+            .header("content-length", blob_size)
+            .header("etag", blob_info.reference.as_bytes())
+            .header("docker-distribution-api-version", "registry/2.0")
             .status(StatusCode::OK)
-            .body(Body::from("unimplemented yet"))
+            .body(Body::wrap_stream(file))
             .unwrap(),
     )
 }
-
-const BLOBSTORE_PATH: &'static str = "/tmp/stuff1";
 
 /// Handles requests for manifests.
 ///

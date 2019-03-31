@@ -7,7 +7,7 @@ extern crate tempfile;
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use tempfile::tempdir;
 
@@ -226,12 +226,25 @@ impl BlobStore {
         // move each `layer` to the bucket
         for layer in &manifest.layers {
             let layer_tarball_path = tarball_directory.join(&layer);
-            let layer_digest = prepend_sha_scheme(DockerSavedManifest::layer_digest(&layer));
-            let layer_bucket_path = self.bucket_dir.join(&layer_digest);
 
-            println!("layer_tarball_path={}", layer_tarball_path.display());
+            // compute the digest
+
+            let mut layer_hasher = Sha256::new();
+            let mut layer_hasher_buf = [0; 1 << 12];
+            let mut layer_tarball_file =
+                std::fs::File::open(&layer_tarball_path).expect("couldn't open layer tarball");
+
+            loop {
+                match layer_tarball_file.read(&mut layer_hasher_buf) {
+                    Ok(0) => break,
+                    Ok(n) => layer_hasher.input(&layer_hasher_buf[0..n]),
+                    Err(err) => panic!("damn! {}", err),
+                }
+            }
 
             let layer_size = std::fs::metadata(&layer_tarball_path).unwrap().len();
+            let layer_digest = prepend_sha_scheme(&hex::encode(layer_hasher.result().as_slice()));
+            let layer_bucket_path = self.bucket_dir.join(&layer_digest);
 
             assert!(std::fs::rename(layer_tarball_path, layer_bucket_path).is_ok());
 
