@@ -1,3 +1,4 @@
+extern crate hex;
 extern crate serde;
 extern crate serde_json;
 extern crate sha2;
@@ -254,10 +255,21 @@ impl BlobStore {
 
         // compute sha256sum for string
 
-        let mut hasher = Sha256::new();
-        hasher.input(&registry_manifest_json);
+        let registry_manifest_json_digest = prepend_sha_scheme(&hex::encode(
+            Sha256::digest(registry_manifest_json.as_bytes()).as_slice(),
+        ));
 
-        let registry_manifest_json_digest = hasher.result();
+        let registry_manifest_bucket_path = self.bucket_dir.join(&registry_manifest_json_digest);
+
+        let mut registry_manifest_file = std::fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .open(&registry_manifest_bucket_path)
+            .unwrap();
+
+        assert!(registry_manifest_file
+            .write_all(registry_manifest_json.as_bytes())
+            .is_ok());
 
         for repo_tag in &manifest.repo_tags {
             let mut repo_tag_splitted = repo_tag.split(':');
@@ -270,15 +282,17 @@ impl BlobStore {
                 .create(self.manifests_dir.join(&name))
                 .is_ok());
 
-            let mut registry_manifest_file = std::fs::OpenOptions::new()
-                .write(true)
-                .create(true)
-                .open(self.manifests_dir.join(&name).join(&tag))
-                .unwrap();
+            assert!(std::os::unix::fs::symlink(
+                &registry_manifest_bucket_path,
+                self.manifests_dir.join(&name).join(&registry_manifest_json_digest),
+            )
+            .is_ok());
 
-            assert!(registry_manifest_file
-                .write_all(registry_manifest_json.as_bytes())
-                .is_ok());
+            assert!(std::os::unix::fs::symlink(
+                &registry_manifest_bucket_path,
+                self.manifests_dir.join(&name).join(&tag),
+            )
+            .is_ok());
         }
     }
 }
