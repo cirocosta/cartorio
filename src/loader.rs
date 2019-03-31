@@ -209,7 +209,7 @@ impl BlobStore {
 
         let config_bucket_path = self.bucket_dir.join(&config_digest);
 
-        std::fs::rename(config_tarball_path, config_bucket_path);
+        assert!(std::fs::rename(config_tarball_path, config_bucket_path).is_ok());
 
         let config_descriptor = RegistryDescriptor {
             media_type: "application/vnd.docker.container.image.v1+json",
@@ -230,7 +230,7 @@ impl BlobStore {
 
             let layer_size = std::fs::metadata(&layer_tarball_path).unwrap().len();
 
-            std::fs::rename(layer_tarball_path, layer_bucket_path);
+            assert!(std::fs::rename(layer_tarball_path, layer_bucket_path).is_ok());
 
             layers_descriptors.push(RegistryDescriptor {
                 media_type: "application/vnd.docker.image.rootfs.diff.tar",

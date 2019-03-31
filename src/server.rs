@@ -131,6 +131,9 @@ fn handle_registry_manifests(req: &Request<Body>) -> Option<Response<Body>> {
         _ => return None,
     };
 
+    // open the manifest
+    // stream it
+
     Some(
         Response::builder()
             .status(StatusCode::OK)
