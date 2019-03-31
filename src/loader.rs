@@ -116,12 +116,6 @@ mod docker_saved_manifest_tests {
 /// │   ├── sha256:sha256(manifest_generated)
 /// │   └── sha256:48e2eeb489cdea1578....0ecd34a
 /// │
-/// ├── blobs
-/// │   └── library
-/// │       └─ nginx
-/// │	    ├── sha256:48e2eeb489cde....03d17ffd50ecd34a -> ../../bucket/sha256:48e2eeb48.... (config)
-/// │	    └── sha256:4dc05cb02b54b....04d14913a7d -> ../../bucket/sha256:4dc0..	      (layer)
-/// │
 /// └── manifests
 ///     └── library
 ///         └─ nginx
@@ -131,7 +125,6 @@ mod docker_saved_manifest_tests {
 ///
 struct BlobStore {
     bucket_dir: PathBuf,
-    blobs_dir: PathBuf,
     manifests_dir: PathBuf,
 }
 
@@ -139,7 +132,6 @@ impl BlobStore {
     fn new(root: &str) -> BlobStore {
         BlobStore {
             bucket_dir: Path::new(root).join("bucket"),
-            blobs_dir: Path::new(root).join("blobs"),
             manifests_dir: Path::new(root).join("manifests"),
         }
     }
@@ -148,10 +140,6 @@ impl BlobStore {
     /// hierarch managed by BlobStore.
     ///
     fn create_directories(&self) -> std::io::Result<()> {
-        std::fs::DirBuilder::new()
-            .recursive(true)
-            .create(&self.blobs_dir)?;
-
         std::fs::DirBuilder::new()
             .recursive(true)
             .create(&self.bucket_dir)?;
@@ -171,9 +159,9 @@ impl BlobStore {
     ///
     ///
     fn load_unpacked_tarball(&self, tarball_directory: &Path) {
-        let manifests =
-            parse_docker_save_manifest(tarball_directory.join("manifest.json").to_str().unwrap())
-                .unwrap();
+        let tarball_manifest_json = std::fs::read_to_string(tarball_directory.join("manifest.json")).unwrap();
+
+        let manifests = parse_docker_save_manifest(&tarball_manifest_json).unwrap();
 
         for manifest in manifests {
             self.move_tarball_content_to_bucket(&tarball_directory, &manifest);

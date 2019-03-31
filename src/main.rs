@@ -23,6 +23,7 @@ fn main() {
                         .help("Directory where blobs, manifests and configurations are saved to"),
                     Arg::with_name("tarball")
                         .required(true)
+                        .default_value("./image.tar")
                         .long("tarball")
                         .short("t")
                         .help("Tarball to load into the registry"),
@@ -60,8 +61,6 @@ fn main() {
                 &value_t!(m, "blobstore", String).unwrap(),
             );
         }
-
-        ("", None) => eprintln!("No subcommand specified. Check --help."),
 
         _ => unreachable!(),
     }
