@@ -1,6 +1,9 @@
 extern crate hyper;
+extern crate futures;
+extern crate futures_fs;
 
-use hyper::rt::Future;
+use futures_fs::FsPool;
+use futures::{Future, Stream};
 use hyper::service::service_fn_ok;
 use hyper::{Body, Method, Request, Response, Server, StatusCode};
 use std::net::SocketAddr;
@@ -131,13 +134,13 @@ fn handle_registry_manifests(req: &Request<Body>) -> Option<Response<Body>> {
         _ => return None,
     };
 
-    // open the manifest
-    // stream it
+    let file = FsPool::default()
+        .read("./NOTES.txt", Default::default());
 
     Some(
         Response::builder()
             .status(StatusCode::OK)
-            .body(Body::from("unimplemented yet"))
+            .body(Body::wrap_stream(file))
             .unwrap(),
     )
 }

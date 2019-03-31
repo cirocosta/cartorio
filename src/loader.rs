@@ -1,10 +1,12 @@
 extern crate serde;
 extern crate serde_json;
+extern crate sha2;
 extern crate tar;
 extern crate tempfile;
 
-use std::io::Write;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use tempfile::tempdir;
 
@@ -239,7 +241,9 @@ impl BlobStore {
             });
         }
 
-        let registry_manifest = RegistryManifest{
+        // prepare the final manifest
+
+        let registry_manifest = RegistryManifest {
             schema_version: 2,
             media_type: "application/vnd.docker.distribution.manifest.v2+json",
             config: config_descriptor,
@@ -248,17 +252,34 @@ impl BlobStore {
 
         let registry_manifest_json = serde_json::to_string_pretty(&registry_manifest).unwrap();
 
-        assert!(std::fs::DirBuilder::new()
-            .recursive(true)
-            .create(self.manifests_dir.join("test")).is_ok());
+        // compute sha256sum for string
 
-        let mut registry_manifest_file = std::fs::OpenOptions::new()
-            .write(true)
-            .create(true)
-            .open(self.manifests_dir.join("test").join("manifest.json"))
-            .unwrap();
-    
-        assert!(registry_manifest_file.write_all(registry_manifest_json.as_bytes()).is_ok());
+        let mut hasher = Sha256::new();
+        hasher.input(&registry_manifest_json);
+
+        let registry_manifest_json_digest = hasher.result();
+
+        for repo_tag in &manifest.repo_tags {
+            let mut repo_tag_splitted = repo_tag.split(':');
+
+            let name = repo_tag_splitted.next().unwrap();
+            let tag = repo_tag_splitted.next().unwrap();
+
+            assert!(std::fs::DirBuilder::new()
+                .recursive(true)
+                .create(self.manifests_dir.join(&name))
+                .is_ok());
+
+            let mut registry_manifest_file = std::fs::OpenOptions::new()
+                .write(true)
+                .create(true)
+                .open(self.manifests_dir.join(&name).join(&tag))
+                .unwrap();
+
+            assert!(registry_manifest_file
+                .write_all(registry_manifest_json.as_bytes())
+                .is_ok());
+        }
     }
 }
 
