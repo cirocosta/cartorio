@@ -3,9 +3,35 @@ extern crate serde_json;
 extern crate tar;
 extern crate tempfile;
 
-use serde::Deserialize;
+use std::io::Write;
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use tempfile::tempdir;
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct RegistryDescriptor {
+    media_type: &'static str,
+    size: u64,
+    digest: String,
+}
+
+// TODO add annotations
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct RegistryManifest {
+    schema_version: u8,
+    media_type: &'static str,
+    config: RegistryDescriptor,
+    layers: Vec<RegistryDescriptor>,
+}
+
+fn prepend_sha_scheme(digest: &str) -> String {
+    let mut res = String::with_capacity(2);
+    res.push_str("sha256:");
+    res.push_str(digest);
+    res.to_string()
+}
 
 /// Represents the configuration exposed by `docker save`d  tarballs.
 ///
@@ -24,13 +50,6 @@ struct DockerSavedManifest {
     config: String,
     repo_tags: Vec<String>,
     layers: Vec<String>,
-}
-
-fn prepend_sha_scheme(digest: &str) -> String {
-    let mut res = String::with_capacity(2);
-    res.push_str("sha256:");
-    res.push_str(digest);
-    res.to_string()
 }
 
 impl DockerSavedManifest {
@@ -159,7 +178,8 @@ impl BlobStore {
     ///
     ///
     fn load_unpacked_tarball(&self, tarball_directory: &Path) {
-        let tarball_manifest_json = std::fs::read_to_string(tarball_directory.join("manifest.json")).unwrap();
+        let tarball_manifest_json =
+            std::fs::read_to_string(tarball_directory.join("manifest.json")).unwrap();
 
         let manifests = parse_docker_save_manifest(&tarball_manifest_json).unwrap();
 
@@ -184,23 +204,61 @@ impl BlobStore {
     ) {
         // moving `config` over to `bucket`
         let config_tarball_path = tarball_directory.join(&manifest.config);
-        let config_bucket_path = self
-            .bucket_dir
-            .join(prepend_sha_scheme(&manifest.config_digest()));
+        let config_size = std::fs::metadata(&config_tarball_path).unwrap().len();
+        let config_digest = prepend_sha_scheme(&manifest.config_digest());
+
+        let config_bucket_path = self.bucket_dir.join(&config_digest);
 
         std::fs::rename(config_tarball_path, config_bucket_path);
 
+        let config_descriptor = RegistryDescriptor {
+            media_type: "application/vnd.docker.container.image.v1+json",
+            size: config_size,
+            digest: config_digest,
+        };
+
+        let mut layers_descriptors: Vec<RegistryDescriptor> =
+            Vec::with_capacity(manifest.layers.len());
+
         // move each `layer` to the bucket
         for layer in &manifest.layers {
-            let layer_tarball_path = tarball_directory.join(&layer).join("layer.tar");
-            let layer_bucket_path =
-                self.bucket_dir
-                    .join(prepend_sha_scheme(DockerSavedManifest::layer_digest(
-                        &layer,
-                    )));
+            let layer_tarball_path = tarball_directory.join(&layer);
+            let layer_digest = prepend_sha_scheme(DockerSavedManifest::layer_digest(&layer));
+            let layer_bucket_path = self.bucket_dir.join(&layer_digest);
+
+            println!("layer_tarball_path={}", layer_tarball_path.display());
+
+            let layer_size = std::fs::metadata(&layer_tarball_path).unwrap().len();
 
             std::fs::rename(layer_tarball_path, layer_bucket_path);
+
+            layers_descriptors.push(RegistryDescriptor {
+                media_type: "application/vnd.docker.image.rootfs.diff.tar",
+                size: layer_size,
+                digest: layer_digest,
+            });
         }
+
+        let registry_manifest = RegistryManifest{
+            schema_version: 2,
+            media_type: "application/vnd.docker.distribution.manifest.v2+json",
+            config: config_descriptor,
+            layers: layers_descriptors,
+        };
+
+        let registry_manifest_json = serde_json::to_string_pretty(&registry_manifest).unwrap();
+
+        assert!(std::fs::DirBuilder::new()
+            .recursive(true)
+            .create(self.manifests_dir.join("test")).is_ok());
+
+        let mut registry_manifest_file = std::fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .open(self.manifests_dir.join("test").join("manifest.json"))
+            .unwrap();
+    
+        assert!(registry_manifest_file.write_all(registry_manifest_json.as_bytes()).is_ok());
     }
 }
 
