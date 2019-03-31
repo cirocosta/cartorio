@@ -1,12 +1,13 @@
-extern crate hyper;
 extern crate futures;
 extern crate futures_fs;
+extern crate hyper;
 
+use futures::Future;
 use futures_fs::FsPool;
-use futures::{Future, Stream};
 use hyper::service::service_fn_ok;
 use hyper::{Body, Method, Request, Response, Server, StatusCode};
 use std::net::SocketAddr;
+use std::path::Path;
 
 const BODY_NOT_FOUND: &str = "not found";
 
@@ -53,7 +54,6 @@ fn parse_manifests_path(path: &str) -> Option<BlobPath> {
 fn parse_blobs_path(path: &str) -> Option<BlobPath> {
     parse_generic_blob_path("blobs", path)
 }
-
 
 #[cfg(test)]
 mod parsing_tests {
@@ -124,21 +124,51 @@ fn handle_registry_blobs(req: &Request<Body>) -> Option<Response<Body>> {
     )
 }
 
+const BLOBSTORE_PATH: &'static str = "/tmp/stuff1";
+
+/// Handles requests for manifests.
+///
+/// ```txt
+/// GET /v2/foo/bar/manifests/tag
+/// ```
+///
 fn handle_registry_manifests(req: &Request<Body>) -> Option<Response<Body>> {
     if req.method() != &Method::GET {
         return None;
     }
 
-    let _manifest_info = match parse_manifests_path(req.uri().path()) {
+    let manifest_info = match parse_manifests_path(req.uri().path()) {
         Some(m) => m,
         _ => return None,
     };
 
-    let file = FsPool::default()
-        .read("./NOTES.txt", Default::default());
+    let manifest_digest_path = std::fs::read_link(
+        Path::new(BLOBSTORE_PATH)
+            .join("manifests")
+            .join(&manifest_info.name)
+            .join(&manifest_info.reference),
+    )
+    .unwrap();
+
+    let manifest_digest = manifest_digest_path.file_name().unwrap().to_str().unwrap();
+
+    let file = FsPool::default().read(
+        Path::new(BLOBSTORE_PATH)
+            .join("manifests")
+            .join(&manifest_info.name)
+            .join(&manifest_info.reference),
+        Default::default(),
+    );
 
     Some(
         Response::builder()
+            .header(
+                "content-type",
+                "application/vnd.docker.distribution.manifest.v2+json",
+            )
+            .header("docker-content-digest", manifest_digest)
+            .header("etag", manifest_digest)
+            .header("docker-distribution-api-version", "registry/2.0")
             .status(StatusCode::OK)
             .body(Body::wrap_stream(file))
             .unwrap(),
@@ -176,6 +206,8 @@ fn handle_liveness_check(req: &Request<Body>) -> Option<Response<Body>> {
 /// appropriate function that is supposed to handle them.
 ///
 fn route(req: Request<Body>) -> Response<Body> {
+    println!("-> {} {}", req.method(), req.uri().path());
+
     if let Some(resp) = handle_liveness_check(&req) {
         return resp;
     } else if let Some(resp) = handle_registry_version_check(&req) {
@@ -215,4 +247,3 @@ pub fn serve(address: &str, _blobstore: &str) {
     println!("listening on {}", address);
     hyper::rt::run(server);
 }
-

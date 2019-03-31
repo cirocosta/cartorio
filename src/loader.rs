@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 use tempfile::tempdir;
 
 #[derive(Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
+#[serde(rename_all = "camelCase")]
 struct RegistryDescriptor {
     media_type: &'static str,
     size: u64,
@@ -21,7 +21,7 @@ struct RegistryDescriptor {
 
 // TODO add annotations
 #[derive(Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
+#[serde(rename_all = "camelCase")]
 struct RegistryManifest {
     schema_version: u8,
     media_type: &'static str,
@@ -284,7 +284,9 @@ impl BlobStore {
 
             assert!(std::os::unix::fs::symlink(
                 &registry_manifest_bucket_path,
-                self.manifests_dir.join(&name).join(&registry_manifest_json_digest),
+                self.manifests_dir
+                    .join(&name)
+                    .join(&registry_manifest_json_digest),
             )
             .is_ok());
 

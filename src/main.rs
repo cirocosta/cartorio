@@ -2,7 +2,7 @@
 extern crate clap;
 extern crate cartorio;
 
-use cartorio::{server, loader};
+use cartorio::{loader, server};
 use clap::{App, AppSettings, Arg, SubCommand};
 
 fn main() {

@@ -1,4 +1,4 @@
 #![allow(dead_code)]
 
-pub mod server;
 pub mod loader;
+pub mod server;
