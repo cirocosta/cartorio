@@ -151,6 +151,9 @@ struct BlobStore {
 }
 
 impl BlobStore {
+    /// Instantiates a blobstore - a place in the filesystem where all of
+    /// the blobs associated with an image (as well as the manifest) exists.
+    ///
     fn new(root: &str) -> BlobStore {
         BlobStore {
             bucket_dir: Path::new(root).join("bucket"),
@@ -180,6 +183,8 @@ impl BlobStore {
     /// tarball lives.
     ///
     ///
+    /// TODO - move this to `DockerSavedImage`
+    ///
     fn load_unpacked_tarball(&self, tarball_directory: &Path) {
         let tarball_manifest_json =
             std::fs::read_to_string(tarball_directory.join("manifest.json")).unwrap();
@@ -199,6 +204,10 @@ impl BlobStore {
     /// * `manifest` - the manifest that describes the contents to be moved.
     /// * `tarball_directory` - directory where the docker tarball contents
     ///                         were extracted to.
+    ///
+    ///
+    /// TODO - move this to `DockerSavedImage`
+    /// TODO - split this into smaller functions
     ///
     fn move_tarball_content_to_bucket(
         &self,

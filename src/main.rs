@@ -30,6 +30,30 @@ fn main() {
                 ]),
         )
         .subcommand(
+            SubCommand::with_name("pull")
+                .about(
+                    "Loads `docker save`d tarballs into cartorio's internal filesystem hierarchy",
+                )
+                .args(&[
+                    Arg::with_name("url")
+                        .default_value("https://registry-1.docker.io")
+                        .short("u")
+                        .long("url")
+                        .help("URL of the registry"),
+                    Arg::with_name("name")
+                        .required(true)
+                        .takes_value(true)
+                        .short("n")
+                        .long("name")
+                        .help("Name of the image to pull"),
+                    Arg::with_name("reference")
+                        .default_value("latest")
+                        .long("r")
+                        .short("reference")
+                        .help("Image reference - tag or digest (including `sha256:`)"),
+                ]),
+        )
+        .subcommand(
             SubCommand::with_name("serve")
                 .about("Serve loaded images as a Docker registry")
                 .args(&[
@@ -53,6 +77,10 @@ fn main() {
                 &value_t!(m, "blobstore", String).unwrap(),
                 &value_t!(m, "tarball", String).unwrap(),
             );
+        }
+
+        ("pull", Some(_m)) => {
+            unimplemented!("not ready!");
         }
 
         ("serve", Some(m)) => {
