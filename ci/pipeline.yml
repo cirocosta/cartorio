@@ -42,15 +42,12 @@ jobs:
         - task: build-image
           privileged: true
           file: repository/ci/tasks/build-image.yml
-        - task: build-linux
+        - task: build-linux-musl
           file: repository/ci/tasks/build.yml
           params: { TARGET: x86_64-unknown-linux-musl }
-        - task: build-darwin
+        - task: build-linux-gnu
           file: repository/ci/tasks/build.yml
-          params: { TARGET: x86_64-apple-darwin }
-        - task: build-arm
-          file: repository/ci/tasks/build.yml
-          params: { TARGET: aarch64-unknown-linux-gnu }
+          params: { TARGET: x86_64-unknown-linux-gnu }
       - put: container-image
         inputs: [image, version]
         get_params: {format: oci}
