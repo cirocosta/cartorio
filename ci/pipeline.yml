@@ -4,6 +4,11 @@ resource_types:
   source:
     repository: concourse/semver-resource
 
+- name: github-release 
+  type: registry-image
+  source:
+    repository: concourse/github-release-resource
+
 
 resources:
   - name: repository
@@ -11,6 +16,13 @@ resources:
     source:
       uri: https://((github-token))@github.com/cirocosta/cartorio
       ignore_paths: [ ./VERSION ]
+
+  - name: github-release
+    type: github-release
+    source:
+      owner: cirocosta
+      repository: cartorio
+      access_token: ((github-token))
 
   - name: container-image
     type: registry-image
@@ -38,15 +50,21 @@ jobs:
         - get: repository
           trigger: true
         - get: version
-      - task: build-image
-        privileged: true
-        file: repository/ci/tasks/build-image.yml
+      - aggregate:
+        - task: build-image
+          privileged: true
+          file: repository/ci/tasks/build-image.yml
+        - task: build-linux
+          file: repository/ci/tasks/build
+          params: { TARGET: x86_64-unknown-linux-musl }
+        - task: build-darwin
+          file: repository/ci/tasks/build
+          params: { TARGET: x86_64-apple-darwin }
+        - task: build-arm
+          file: repository/ci/tasks/build
+          params: { TARGET: aarch64-unknown-linux-gnu }
       - put: container-image
-        inputs: [image]
+        inputs: [image, version]
+        additional_tags: version/version
         get_params: {format: oci}
         params: {image: image/image.tar}
-      - put: version
-        inputs: []
-        params:
-          bump: patch
-          pre: rc
