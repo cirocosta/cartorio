@@ -1,8 +1,21 @@
+resource_types:
+- name: semver
+  type: registry-image
+  source:
+    repository: concourse/semver-resource
+
+
 resources:
   - name: repository
     type: git
     source:
       uri: https://((github-token))@github.com/cirocosta/cartorio
+      ignore_paths: [ ./VERSION ]
+
+  - name: builder
+    type: registry-image
+    source:
+      repository: concourse/builder
 
   - name: container-image
     type: registry-image
@@ -11,18 +24,35 @@ resources:
       username: ((docker-user))
       password: ((docker-password))
 
+  - name: version
+    type: semver
+    source:
+      driver: git
+      uri: https://((github-token))@github.com/cirocosta/mylinux
+      branch: master
+      file: ./VERSION
+      git_user: Ciro S. Costa <cscosta@pivotal.io>
+
 
 jobs:
   - name: build
     public: true
     serial: true
     plan:
-      - get: repository
-        trigger: true
+      - aggregate:
+        - get: repository
+          trigger: true
+        - get: version
       - task: build-image
+        image: builder
         privileged: true
         file: repository/ci/tasks/build-image.yml
       - put: container-image
         inputs: [image]
         get_params: {format: oci}
         params: {image: image/image.tar}
+      - put: version
+        inputs: []
+        params:
+          bump: patch
+          pre: rc
