@@ -3,7 +3,9 @@ platform: linux
 
 image_resource:
   type: registry-image
-  source: {repository: 'rust:1.33'}
+  source: 
+    repository: library/rust
+    tag: '1.33'
 
 params:
   TARGET: ~
