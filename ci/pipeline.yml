@@ -12,11 +12,6 @@ resources:
       uri: https://((github-token))@github.com/cirocosta/cartorio
       ignore_paths: [ ./VERSION ]
 
-  - name: builder
-    type: registry-image
-    source:
-      repository: concourse/builder
-
   - name: container-image
     type: registry-image
     source:
@@ -28,7 +23,7 @@ resources:
     type: semver
     source:
       driver: git
-      uri: https://((github-token))@github.com/cirocosta/mylinux
+      uri: https://((github-token))@github.com/cirocosta/cartorio
       branch: master
       file: ./VERSION
       git_user: Ciro S. Costa <cscosta@pivotal.io>
@@ -44,7 +39,6 @@ jobs:
           trigger: true
         - get: version
       - task: build-image
-        image: builder
         privileged: true
         file: repository/ci/tasks/build-image.yml
       - put: container-image
