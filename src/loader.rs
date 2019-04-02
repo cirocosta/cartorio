@@ -1,12 +1,11 @@
-extern crate hex;
 extern crate serde;
 extern crate serde_json;
-extern crate sha2;
 extern crate tar;
 extern crate tempfile;
 
+use crate::digest;
+
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use tempfile::tempdir;
@@ -19,7 +18,9 @@ struct RegistryDescriptor {
     digest: String,
 }
 
-// TODO add annotations
+/// A manifest that represents an image:
+/// - configuration + layers.
+///
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct RegistryManifest {
@@ -27,13 +28,6 @@ struct RegistryManifest {
     media_type: &'static str,
     config: RegistryDescriptor,
     layers: Vec<RegistryDescriptor>,
-}
-
-fn prepend_sha_scheme(digest: &str) -> String {
-    let mut res = String::with_capacity(2);
-    res.push_str("sha256:");
-    res.push_str(digest);
-    res.to_string()
 }
 
 /// Represents the configuration exposed by `docker save`d  tarballs.
@@ -217,7 +211,7 @@ impl BlobStore {
         // moving `config` over to `bucket`
         let config_tarball_path = tarball_directory.join(&manifest.config);
         let config_size = std::fs::metadata(&config_tarball_path).unwrap().len();
-        let config_digest = prepend_sha_scheme(&manifest.config_digest());
+        let config_digest = digest::prepend_sha_scheme(&manifest.config_digest());
 
         let config_bucket_path = self.bucket_dir.join(&config_digest);
 
@@ -238,21 +232,9 @@ impl BlobStore {
 
             // compute the digest
 
-            let mut layer_hasher = Sha256::new();
-            let mut layer_hasher_buf = [0; 1 << 12];
-            let mut layer_tarball_file =
-                std::fs::File::open(&layer_tarball_path).expect("couldn't open layer tarball");
-
-            loop {
-                match layer_tarball_file.read(&mut layer_hasher_buf) {
-                    Ok(0) => break,
-                    Ok(n) => layer_hasher.input(&layer_hasher_buf[0..n]),
-                    Err(err) => panic!("damn! {}", err),
-                }
-            }
-
             let layer_size = std::fs::metadata(&layer_tarball_path).unwrap().len();
-            let layer_digest = prepend_sha_scheme(&hex::encode(layer_hasher.result().as_slice()));
+            let layer_digest =
+                digest::prepend_sha_scheme(&digest::compute_for_file(&layer_tarball_path).unwrap());
             let layer_bucket_path = self.bucket_dir.join(&layer_digest);
 
             assert!(std::fs::rename(layer_tarball_path, layer_bucket_path).is_ok());
@@ -274,13 +256,7 @@ impl BlobStore {
         };
 
         let registry_manifest_json = serde_json::to_string_pretty(&registry_manifest).unwrap();
-
-        // compute sha256sum for string
-
-        let registry_manifest_json_digest = prepend_sha_scheme(&hex::encode(
-            Sha256::digest(registry_manifest_json.as_bytes()).as_slice(),
-        ));
-
+        let registry_manifest_json_digest = digest::compute_for_string(&registry_manifest_json);
         let registry_manifest_bucket_path = self.bucket_dir.join(&registry_manifest_json_digest);
 
         let mut registry_manifest_file = std::fs::OpenOptions::new()

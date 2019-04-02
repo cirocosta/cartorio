@@ -8,6 +8,7 @@ struct Puller {
 }
 
 impl Puller {
+
     pub fn new(address: &str, blobstore: &str) -> Puller {
         Puller { }
     }
@@ -36,4 +37,5 @@ impl Puller {
     /// ```
     ///
     fn pull_image_resource(&self) {}
+
 }
