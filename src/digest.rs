@@ -3,7 +3,7 @@ extern crate sha2;
 
 use std::fs::File;
 use std::io;
-use std::io::prelude::*;
+use std::io::Read;
 use std::path::PathBuf;
 
 use sha2::{Digest, Sha256};
@@ -14,20 +14,31 @@ use sha2::{Digest, Sha256};
 ///
 /// * `reader` - the supplier of bytes that we compute the hash against.
 ///
-pub fn compute_for_file(filepath: &PathBuf) -> io::Result<String> {
+pub fn compute(mut reader: impl Read) -> io::Result<String> {
     let mut hasher = Sha256::new();
-    let mut hasher_buf = [0; 1 << 12];
-    let mut file = File::open(&filepath)?;
+    let mut buf = [0; 1 << 12];
 
     loop {
-        let amount_read = file.read(&mut hasher_buf)?;
+        let n = reader.read(&mut buf)?;
 
-        if amount_read == 0 {
+        if n == 0 {
             break;
         }
+
+        hasher.input(&buf[0..n]);
     }
 
     Ok(hex::encode(hasher.result().as_slice()))
+}
+
+/// Computes the digest of a file.
+///
+/// # Arguments
+///
+/// * `filepath` - the path to the file to open and compute the digest.
+///
+pub fn compute_for_file(filepath: &PathBuf) -> io::Result<String> {
+    compute(File::open(&filepath)?)
 }
 
 pub fn compute_for_string(content: &str) -> String {
