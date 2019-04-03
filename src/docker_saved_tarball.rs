@@ -140,7 +140,7 @@ mod docker_saved_manifest_tests {
   }
 ]"#;
 
-        let manifests = parse_docker_save_manifest(data).unwrap();
+        let manifests = DockerSavedManifest::parse(data).unwrap();
 
         assert_eq!(manifests.len(), 1);
         assert_eq!(manifests[0].repo_tags.len(), 1,);

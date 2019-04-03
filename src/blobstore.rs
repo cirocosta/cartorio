@@ -26,11 +26,11 @@ pub struct BlobStore {
 
     /// Where blobs exist 
     ///
-    bucket_dir: PathBuf,
+    pub bucket_dir: PathBuf,
 
     /// Directory where manifests are put.
     ///
-    manifests_dir: PathBuf,
+    pub manifests_dir: PathBuf,
 }
 
 impl BlobStore {
@@ -38,25 +38,21 @@ impl BlobStore {
     /// Instantiates a blobstore - a place in the filesystem where all of
     /// the blobs associated with an image (as well as the manifest) exists.
     ///
-    fn new(root: &str) -> BlobStore {
-        BlobStore {
+    pub fn new(root: &Path) -> io::Result<BlobStore> {
+        let blobstore = BlobStore {
             bucket_dir: Path::new(root).join("bucket"),
             manifests_dir: Path::new(root).join("manifests"),
-        }
-    }
-
-    
-    /// Creates the directories that represent the filesystem hierarchy managed
-    /// by this blobstore.
-    ///
-    fn create_directories(&self) -> io::Result<()> {
-        std::fs::DirBuilder::new()
-            .recursive(true)
-            .create(&self.bucket_dir)?;
+        };
 
         std::fs::DirBuilder::new()
             .recursive(true)
-            .create(&self.manifests_dir)
+            .create(&blobstore.bucket_dir)?;
+
+        std::fs::DirBuilder::new()
+            .recursive(true)
+            .create(&blobstore.manifests_dir)?;
+
+        Ok(blobstore)
     }
 
 
