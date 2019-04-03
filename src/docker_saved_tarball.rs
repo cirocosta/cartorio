@@ -1,13 +1,16 @@
 extern crate tempfile;
 
+use serde::{Deserialize};
 use crate::blobstore::{BlobStore};
 use crate::image_loader::{ImageLoader};
 use std::io;
 use tempfile::tempdir;
+use std::path::PathBuf;
+
 
 /// A tarball that has been generated through `docker save`.
 ///
-struct DockerSavedTarball {
+pub struct DockerSavedTarball {
 
     /// Directory where the tarball has been unpacked
     /// (if so).
@@ -40,15 +43,15 @@ impl DockerSavedTarball {
             .unpack(tarball_tmp_dir.path())
             .unwrap();
 
-        DockerSavedTarball{
+        Ok(DockerSavedTarball{
             unpacked_dir: tarball_tmp_dir,
-        }
+        })
     }
 
 }
 
 
-impl DockerSavedTarball for ImageLoader {
+impl ImageLoader for DockerSavedTarball {
 
     /// Loads the contents of the `docker save`d tarball into the
     /// blobstore.
@@ -112,7 +115,7 @@ impl DockerSavedManifest {
     /// references to multiple images, thus, this method returns a vector instead
     /// of a single item.
     ///
-    pub fn parse(content: &str) serde_json::Result<Vec<DockerSavedManifest>> {
+    pub fn parse(content: &str) -> serde_json::Result<Vec<DockerSavedManifest>> {
         let manifests: Vec<DockerSavedManifest> = serde_json::from_str(content)?;
         Ok(manifests)
     }

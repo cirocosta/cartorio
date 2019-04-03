@@ -1,6 +1,5 @@
 use std::io;
-use std::fs::File;
-use std::io::prelude::*;
+use std::path::PathBuf;
 use std::path::Path;
 
 /// A filesystem-based store for the contents of images.
@@ -23,13 +22,13 @@ use std::path::Path;
 ///           └── sha256:sha256(manifest_generated) --> ../../bucket/sha256:sha256(manifest_generated)
 /// ```
 ///
-struct BlobStore {
+pub struct BlobStore {
 
     /// Where blobs exist 
     ///
     bucket_dir: PathBuf,
 
-    ///
+    /// Directory where manifests are put.
     ///
     manifests_dir: PathBuf,
 }
@@ -89,7 +88,7 @@ impl BlobStore {
     ///
     /// * `blob_path` - path to the blob file in the filesystem.
     ///
-    fn move_blob(&self, blob_path: Path) {
+    fn move_blob(&self, blob_path: &Path) {
         unimplemented!("TBD");
     }
 
@@ -126,7 +125,7 @@ impl BlobStore {
     /// * `manifest_path` - location on disk where the manifest file exists.
     /// * `tag` - an optional tag for such manifest.
     ///
-    fn move_manifest(&self, manifest_path: Path, tag: Option<&str>) {
+    fn move_manifest(&self, manifest_path: &Path, tag: Option<&str>) {
         unimplemented!("TBD");
     }
 }

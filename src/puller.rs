@@ -1,7 +1,3 @@
-use hyper::rt::{self, Future, Stream};
-use hyper::Client;
-use std::io::{self, Write};
-
 struct Puller {
     // blobstore: u8,
     // address: String,

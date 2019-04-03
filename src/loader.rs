@@ -5,32 +5,11 @@ extern crate tempfile;
 
 use crate::digest;
 
-use serde::{Deserialize, Serialize};
-use std::io::{Read, Write};
+use std::io::{Write};
 use std::path::{Path, PathBuf};
 use tempfile::tempdir;
 
 
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct RegistryDescriptor {
-    media_type: &'static str,
-    size: u64,
-    digest: String,
-}
-
-
-/// A manifest that represents an image:
-/// - configuration + layers.
-///
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct RegistryManifest {
-    schema_version: u8,
-    media_type: &'static str,
-    config: RegistryDescriptor,
-    layers: Vec<RegistryDescriptor>,
-}
 
 
 /// Manages the location where all of the files managed by

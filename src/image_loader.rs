@@ -1,8 +1,9 @@
+use std::io;
 use crate::blobstore::{BlobStore};
 
 /// Something that can load images into a blobstore.
 ///
-trait ImageLoader {
+pub trait ImageLoader {
 
     /// Loads images into the blobstore.
     ///
