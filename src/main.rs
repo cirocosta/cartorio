@@ -2,7 +2,7 @@
 extern crate clap;
 extern crate cartorio;
 
-use cartorio::{loader, server};
+use cartorio::{server};
 use clap::{App, AppSettings, Arg, SubCommand};
 
 fn main() {
@@ -73,10 +73,7 @@ fn main() {
 
     match matches.subcommand() {
         ("load", Some(m)) => {
-            loader::load_tarball(
-                &value_t!(m, "blobstore", String).unwrap(),
-                &value_t!(m, "tarball", String).unwrap(),
-            );
+            unimplemented!("not ready");
         }
 
         ("pull", Some(_m)) => {
