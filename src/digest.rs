@@ -8,6 +8,7 @@ use std::path::PathBuf;
 
 use sha2::{Digest, Sha256};
 
+
 /// Computes the digest of a file.
 ///
 /// # Arguments
@@ -41,14 +42,36 @@ pub fn compute_for_file(filepath: &PathBuf) -> io::Result<String> {
     compute(File::open(&filepath)?)
 }
 
+
+/// Computes the digest from the contents of a string.
+///
+/// # Arguments
+///
+/// * `content` - the string whose digest is meant to be computed.
+///
 pub fn compute_for_string(content: &str) -> String {
     hex::encode(Sha256::digest(content.as_bytes()).as_slice())
 }
 
+/// Stores digest information into a file.
+///
+/// # Remarks
+///
+/// The filesystem where the file lives must support having extended
+/// attributes set & get from files.
+///
 fn store() {
     unimplemented!("TBD");
 }
 
+
+/// Retrieves digest information from a file.
+///
+/// # Remarks
+///
+/// The filesystem where the file lives must support having extended
+/// attributes set & get from files.
+///
 fn retrieve() {
     unimplemented!("TBD");
 }

@@ -1,9 +1,36 @@
+use std::io;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 
+/// A filesystem-based store for the contents of images.
+///
+/// It manages the location where all of the files managed by
+/// the registry are served from.
+///
+/// ```txt
+/// (blobstore)
+/// .
+/// │
+/// ├── bucket
+/// │   ├── sha256:sha256(manifest_generated)
+/// │   └── sha256:48e2eeb489cdea1578....0ecd34a
+/// │
+/// └── manifests
+///     └── library
+///         └─ nginx
+///           ├── latest -> ../../bucket/sha256:sha256(manifest_generated)
+///           └── sha256:sha256(manifest_generated) --> ../../bucket/sha256:sha256(manifest_generated)
+/// ```
+///
 struct BlobStore {
+
+    /// Where blobs exist 
+    ///
     bucket_dir: PathBuf,
+
+    ///
+    ///
     manifests_dir: PathBuf,
 }
 
@@ -19,7 +46,22 @@ impl BlobStore {
         }
     }
 
-    /// Adds a blob to the store.
+    
+    /// Creates the directories that represent the filesystem hierarchy managed
+    /// by this blobstore.
+    ///
+    fn create_directories(&self) -> io::Result<()> {
+        std::fs::DirBuilder::new()
+            .recursive(true)
+            .create(&self.bucket_dir)?;
+
+        std::fs::DirBuilder::new()
+            .recursive(true)
+            .create(&self.manifests_dir)
+    }
+
+
+    /// Moves a blob to the store.
     ///
     /// ```txt
     ///         .
@@ -47,11 +89,11 @@ impl BlobStore {
     ///
     /// * `blob_path` - path to the blob file in the filesystem.
     ///
-    fn add_blob(&self, blob_path: Path) {
+    fn move_blob(&self, blob_path: Path) {
         unimplemented!("TBD");
     }
 
-    /// Adds a manifest to the store.
+    /// Moves a manifest to the store.
     ///
     /// ```txt
     ///
@@ -84,7 +126,7 @@ impl BlobStore {
     /// * `manifest_path` - location on disk where the manifest file exists.
     /// * `tag` - an optional tag for such manifest.
     ///
-    fn add_manifest(&self, manifest_path: Path, tag: Option<&str>) {
+    fn move_manifest(&self, manifest_path: Path, tag: Option<&str>) {
         unimplemented!("TBD");
     }
 }
