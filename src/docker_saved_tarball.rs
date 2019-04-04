@@ -66,6 +66,27 @@ impl ImageLoader for DockerSavedTarball {
     /// [`BlobStore`]: struct.BlobStore.html
     ///
     fn load(&self, blobstore: &BlobStore) -> io::Result<()> {
+
+        // CONFIG
+        //  1. compute the size
+        //  2. compute the digest
+        //  4. move to blobstore
+        //  3. create descriptor
+
+        // FOR EACH LAYER
+        //  1. compress + compute digest
+        //  2. gather the size on disk
+        //  4. move to blobstore
+        //  3. create descriptor
+        
+        // MANIFEST
+        //  1. create manifest using `config` + `layer_descriptors`
+        //  2. write to file
+        //  3. compute digest
+        //  4. move to blobstore
+        //  5. link tags to manifest
+
+
         unimplemented!();
     }
 }

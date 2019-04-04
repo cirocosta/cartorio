@@ -84,45 +84,43 @@ impl BlobStore {
     ///
     /// * `blob_path` - path to the blob file in the filesystem.
     ///
-    fn move_blob(&self, blob_path: &Path) {
+    fn add_blob(&self, blob_path: &Path) {
         unimplemented!("TBD");
     }
 
-    /// Moves a manifest to the store.
+    /// Links a manifest to a blob that represents it.
     ///
     /// ```txt
     ///
     ///         .
-    ///         ├── blobstore
-    ///         │   ├── bucket
-    ///         │   └── manifests
-    ///         │       └── latest
-    ///         └── foo
-    ///             └── manifest.json
+    ///         └── blobstore
+    ///             ├── bucket
+    ///             │   └── sha256:4bc453b5
+    ///             └── manifests
     ///
     ///
-    ///  add_manifest("./foo/manifest.json", "latest")
-    ///     -- (possibly computes digest + performs moves + links)
-    ///             -- digest might be in xattrs
+    ///  tag_manifest("sha256:4bc453b", "name", "latest")
     ///
     ///         .
     ///         ├── blobstore
     ///         │   ├── bucket
     ///         │   │   └── sha256:4bc453b5
     ///         │   └── manifests
-    ///         │       ├── latest -> ../bucket/sha256:4bc453
-    ///         │       └── sha256:4bc453b -> ../bucket/sha256:4bc453b53
+    ///         │       └── name
+    ///         │           └── latest -> ../bucket/sha256:4bc453
     ///         └── foo
     ///
     /// ```
     ///
     /// # Arguments
     ///
-    /// * `manifest_path` - location on disk where the manifest file exists.
-    /// * `tag` - an optional tag for such manifest.
+    /// * `digest` - location on disk where the manifest file exists.
+    /// * `name` - a `:` separated optional tag for such manifest.
+    /// * `reference` - a `:` separated optional tag for such manifest.
     ///
-    fn move_manifest(&self, manifest_path: &Path, tag: Option<&str>) {
+    fn tag_manifest(&self, digest: &str, name: &str, reference: &str) {
         unimplemented!("TBD");
     }
+
 }
 
