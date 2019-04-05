@@ -6,9 +6,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ManifestDescriptor {
-    media_type: &'static str,
-    size: u64,
-    digest: String,
+    pub media_type: &'static str,
+    pub size: u64,
+    pub digest: String,
 }
 
 

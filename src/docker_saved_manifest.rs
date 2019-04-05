@@ -20,15 +20,15 @@ use std::path::Path;
 pub struct ImageManifest {
     /// Location of the final container configuration.
     ///
-    config: String,
+    pub config: String,
 
     /// List of tags associated with the image.
     ///
-    repo_tags: Vec<String>,
+    pub repo_tags: Vec<String>,
 
     /// Image layers.
     ///
-    layers: Vec<String>,
+    pub layers: Vec<String>,
 }
 
 pub struct DockerSavedManifest {

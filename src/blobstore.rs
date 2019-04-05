@@ -84,7 +84,7 @@ impl BlobStore {
     ///
     /// * `blob_path` - path to the blob file in the filesystem.
     ///
-    fn add_blob(&self, blob_path: &Path) {
+    pub fn add_blob(&self, blob_path: &Path) {
         unimplemented!("TBD");
     }
 

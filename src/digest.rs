@@ -4,7 +4,7 @@ extern crate sha2;
 use std::fs::File;
 use std::io;
 use std::io::Read;
-use std::path::PathBuf;
+use std::path::{Path};
 
 use sha2::{Digest, Sha256};
 
@@ -38,8 +38,8 @@ pub fn compute(mut reader: impl Read) -> io::Result<String> {
 ///
 /// * `filepath` - the path to the file to open and compute the digest.
 ///
-pub fn compute_for_file(filepath: &PathBuf) -> io::Result<String> {
-    compute(File::open(&filepath)?)
+pub fn compute_for_file(filepath: &Path) -> io::Result<String> {
+    compute(File::open(filepath)?)
 }
 
 

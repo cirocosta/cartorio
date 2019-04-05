@@ -1,7 +1,8 @@
 extern crate tempfile;
 
+use crate::digest;
 use crate::blobstore::{BlobStore};
-use crate::docker_saved_manifest::DockerSavedManifest;
+use crate::docker_saved_manifest::{DockerSavedManifest, ImageManifest};
 use crate::image_loader::{ImageLoader};
 use crate::registry::{ManifestDescriptor};
 use tempfile::tempdir;
@@ -60,17 +61,41 @@ impl DockerSavedTarball {
         })
     }
 
+    fn ingest_blob(blobstore: &BlobStore, original_location: &Path) -> io::Result<ManifestDescriptor> {
+        //       1. compute the digest
+        //       2. gather the size
+        //       4. move file to blobstore
+        //       3. create descriptor
+        
+        let blob_digest = digest::compute_for_file(original_location)?;
+        let blob_metadata = std::fs::metadata(original_location)?;
+        let blob_size = blob_metadata.len();
 
-    fn prepare_blob(original_location: &Path) -> io::Result<ManifestDescriptor> {
-        unimplemented!();
+        blobstore.add_blob(original_location);
+
+        Ok(ManifestDescriptor{
+            // TODO receive this as an arg? use enum?
+            media_type: "application/vnd.docker.container.image.v1+json",
+            size: blob_size,
+            digest: blob_digest,
+        })
     }
+
+    /// Loads a single image as described by a manifest.
+    ///
+    fn load_image(&self, blobstore: &BlobStore, manifest: &ImageManifest) {
+        let mut descriptors: Vec<ManifestDescriptor> = Vec::with_capacity(manifest.layers.len() + 1);
+
+        // TODO
+    }
+
 }
 
 
 impl ImageLoader for DockerSavedTarball {
 
-    /// Loads the contents of the `docker save`d tarball into the
-    /// blobstore.
+    /// Loads the contents of all of the images in the contents of a `docker save`d 
+    /// tarball into the blobstore.
     ///
     ///
     /// # Arguments
@@ -82,31 +107,33 @@ impl ImageLoader for DockerSavedTarball {
     /// [`BlobStore`]: struct.BlobStore.html
     ///
     fn load(&self, blobstore: &BlobStore) -> io::Result<()> {
-
-        // CONFIG
-        //  descriptors = append(descriptors, prepare_blob())
+        // FOR EACH IMAGE IN MANIFEST:
         //
-        //    1. compute the digest
-        //    2. gather the size
-        //    4. move file to blobstore
-        //    3. create descriptor
+        //    CONFIG
+        //     descriptors = append(descriptors, ingest_blob())
+        //    
+        //       1. compute the digest
+        //       2. gather the size
+        //       4. move file to blobstore
+        //       3. create descriptor
+        //    
+        //    
+        //    FOR EACH LAYER
+        //    
+        //     descriptors = append(descriptors, ingest_blob())
+        //       1. compute the digest
+        //       2. gather the size on disk
+        //       4. move file to blobstore
+        //       3. create descriptor
+        //    
+        //    
+        //    MANIFEST
+        //     1. create manifest using `config` + `layer_descriptors`
+        //     2. write to file
+        //     3. compute digest
+        //     4. move to blobstore
+        //     5. link tags to manifest
         //
-
-        // FOR EACH LAYER
-        //
-        //  descriptors = append(descriptors, prepare_blob())
-        //    1. compute the digest
-        //    2. gather the size on disk
-        //    4. move file to blobstore
-        //    3. create descriptor
-        //
-        
-        // MANIFEST
-        //  1. create manifest using `config` + `layer_descriptors`
-        //  2. write to file
-        //  3. compute digest
-        //  4. move to blobstore
-        //  5. link tags to manifest
         
         unimplemented!();
     }
