@@ -20,6 +20,8 @@ pub struct DockerSavedTarball {
     /// (if so).
     ///
     unpacked_dir: tempfile::TempDir,
+
+    parsed_config: DockerSavedManifest,
 }
 
 
@@ -44,13 +46,17 @@ impl DockerSavedTarball {
         let tarball_file = File::open(tarball)?;
 
         tar::Archive::new(tarball_file)
-            .unpack(tarball_tmp_dir.path())
-            .unwrap();
+            .unpack(tarball_tmp_dir.path())?;
 
-        let manifest_content = fs::read_to_string(tarball)?;
+        let manifest_content = fs::read_to_string(tarball_tmp_dir
+            .path()
+            .join("manifest.json"))?;
+
+        let config: DockerSavedManifest = manifest_content.parse()?;
 
         Ok(DockerSavedTarball{
             unpacked_dir: tarball_tmp_dir,
+            parsed_config: config,
         })
     }
 
@@ -78,16 +84,22 @@ impl ImageLoader for DockerSavedTarball {
     fn load(&self, blobstore: &BlobStore) -> io::Result<()> {
 
         // CONFIG
-        //  1. compute the digest
-        //  2. gather the size
-        //  4. move file to blobstore
-        //  3. create descriptor
+        //  descriptors = append(descriptors, prepare_blob())
+        //
+        //    1. compute the digest
+        //    2. gather the size
+        //    4. move file to blobstore
+        //    3. create descriptor
+        //
 
         // FOR EACH LAYER
-        //  1. compute the digest
-        //  2. gather the size on disk
-        //  4. move file to blobstore
-        //  3. create descriptor
+        //
+        //  descriptors = append(descriptors, prepare_blob())
+        //    1. compute the digest
+        //    2. gather the size on disk
+        //    4. move file to blobstore
+        //    3. create descriptor
+        //
         
         // MANIFEST
         //  1. create manifest using `config` + `layer_descriptors`
