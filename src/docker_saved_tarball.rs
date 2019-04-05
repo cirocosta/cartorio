@@ -1,11 +1,15 @@
 extern crate tempfile;
 
-use serde::{Deserialize};
 use crate::blobstore::{BlobStore};
+use crate::docker_saved_manifest::DockerSavedManifest;
 use crate::image_loader::{ImageLoader};
-use std::io;
+use crate::registry::{ManifestDescriptor};
 use tempfile::tempdir;
-use std::path::PathBuf;
+use std::fs::File;
+use std::fs;
+use std::io::{Read};
+use std::io;
+use std::path::{PathBuf, Path};
 
 
 /// A tarball that has been generated through `docker save`.
@@ -35,19 +39,25 @@ impl DockerSavedTarball {
     /// * the temporary directory will be automatically removed once the object
     ///   goes out of scope.
     ///
-    pub fn new(tarball: PathBuf) -> io::Result<DockerSavedTarball> {
+    pub fn new(tarball: &Path) -> io::Result<DockerSavedTarball> {
         let mut tarball_tmp_dir = tempdir().unwrap();
-        let tarball_file = std::fs::File::open(tarball)?;
+        let tarball_file = File::open(tarball)?;
 
         tar::Archive::new(tarball_file)
             .unpack(tarball_tmp_dir.path())
             .unwrap();
+
+        let manifest_content = fs::read_to_string(tarball)?;
 
         Ok(DockerSavedTarball{
             unpacked_dir: tarball_tmp_dir,
         })
     }
 
+
+    fn prepare_blob(original_location: &Path) -> io::Result<ManifestDescriptor> {
+        unimplemented!();
+    }
 }
 
 
@@ -68,15 +78,15 @@ impl ImageLoader for DockerSavedTarball {
     fn load(&self, blobstore: &BlobStore) -> io::Result<()> {
 
         // CONFIG
-        //  1. compute the size
-        //  2. compute the digest
-        //  4. move to blobstore
+        //  1. compute the digest
+        //  2. gather the size
+        //  4. move file to blobstore
         //  3. create descriptor
 
         // FOR EACH LAYER
-        //  1. compress + compute digest
+        //  1. compute the digest
         //  2. gather the size on disk
-        //  4. move to blobstore
+        //  4. move file to blobstore
         //  3. create descriptor
         
         // MANIFEST
@@ -85,90 +95,9 @@ impl ImageLoader for DockerSavedTarball {
         //  3. compute digest
         //  4. move to blobstore
         //  5. link tags to manifest
-
-
+        
         unimplemented!();
     }
 }
 
 
-/// Represents the configuration exposed by `docker save`d  tarballs.
-///
-/// ```text
-/// {
-///    Config: "$digest.json",
-///    RepoTags: [ "name:tag" ],
-///    Layers: [ "$digest/layer.tar" ]
-/// }
-/// ```
-///
-#[derive(Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct DockerSavedManifest {
-    /// Location of the final container configuration.
-    ///
-    config: String,
-
-    /// List of tags associated with the image.
-    ///
-    repo_tags: Vec<String>,
-
-    /// Image layers.
-    ///
-    layers: Vec<String>,
-}
-
-
-impl DockerSavedManifest {
-
-    /// Parses the contents of a manifest contained within a `docker save`d
-    /// tarball.
-    ///
-    ///
-    /// # Arguments
-    ///
-    /// * `content` - the contents of the `manifest.json` file.
-    ///
-    ///
-    /// # Remarks
-    ///
-    /// The `manifest.json` file within a `docker save`d tarball may contain
-    /// references to multiple images, thus, this method returns a vector instead
-    /// of a single item.
-    ///
-    pub fn parse(content: &str) -> serde_json::Result<Vec<DockerSavedManifest>> {
-        let manifests: Vec<DockerSavedManifest> = serde_json::from_str(content)?;
-        Ok(manifests)
-    }
-}
-
-
-#[cfg(test)]
-mod docker_saved_manifest_tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_docker_save_manifest() {
-        let data = r#"[
-  {
-    "Config": "48e2eeb489cdea15786d3622270750508d7385f3b684306703d17ffd50ecd34a.json",
-    "RepoTags": [
-      "a:latest"
-    ],
-    "Layers": [
-      "4dc05cb02b54b373232011f781f8a98905d3e10575f2a399094f704d14913a7d/layer.tar"
-    ]
-  }
-]"#;
-
-        let manifests = DockerSavedManifest::parse(data).unwrap();
-
-        assert_eq!(manifests.len(), 1);
-        assert_eq!(manifests[0].repo_tags.len(), 1,);
-        assert_eq!(manifests[0].layers.len(), 1,);
-        assert_eq!(
-            manifests[0].config,
-            "48e2eeb489cdea15786d3622270750508d7385f3b684306703d17ffd50ecd34a.json"
-        );
-    }
-}

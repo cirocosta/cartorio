@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct ManifestDescriptor {
+pub struct ManifestDescriptor {
     media_type: &'static str,
     size: u64,
     digest: String,
