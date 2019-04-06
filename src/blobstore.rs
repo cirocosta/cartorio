@@ -88,7 +88,7 @@ impl BlobStore {
     /// * `blob` - path to the blob file in the filesystem.
     ///
     pub fn add_blob(&self, blob: &Path) -> io::Result<()> {
-        let blob_digest = digest::must_retrieve(blob)?;
+        let blob_digest = digest::retrieve_or_compute_and_store(blob)?;
         let blob_filename = digest::prepend_sha_scheme(&blob_digest);
         let blob_bucket_path = self.bucket_dir.join(blob_filename);
 
