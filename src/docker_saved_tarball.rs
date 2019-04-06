@@ -83,7 +83,7 @@ impl DockerSavedTarball {
         let blob_metadata = std::fs::metadata(original_location)?;
         let blob_size = blob_metadata.len();
 
-        self.blobstore.add_blob(original_location);
+        self.blobstore.add_blob(original_location)?;
 
         Ok(ManifestDescriptor{
             media_type: "application/vnd.docker.container.image.v1+json", // [cc]: receive this as arg

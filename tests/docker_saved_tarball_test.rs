@@ -13,6 +13,13 @@ fn test_docker_saved_tarball() {
 
     let docker_saved_tarball = DockerSavedTarball::new(&tarball_path, blobstore).unwrap();
 
-
     assert!(docker_saved_tarball.load().is_ok());
+
+
+    // check that it contains:
+    // - the config loaded
+    // - the layers loaded
+    // - the manifest referenced
+
+
 }
