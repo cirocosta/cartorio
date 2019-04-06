@@ -124,6 +124,9 @@ fn handle_registry_blobs(req: &Request<Body>) -> Option<Response<Body>> {
             .join("bucket")
             .join(&blob_info.reference);
 
+    // size
+    // digest
+    // file
     let blob_size = std::fs::metadata(&file_path).unwrap().len();
 
     let file = FsPool::default().read(file_path, Default::default());

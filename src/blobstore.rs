@@ -98,6 +98,7 @@ impl BlobStore {
         )
     }
 
+
     /// Links a manifest to a blob that represents it.
     ///
     /// ```txt

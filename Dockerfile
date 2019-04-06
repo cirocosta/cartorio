@@ -13,8 +13,11 @@ FROM rust AS base
 
 FROM rust AS test
 
+	ENV RUST_BACKTRACE=1
+
 	WORKDIR /usr/src/myapp
 	COPY . .
+
 	RUN cargo test
 
 
