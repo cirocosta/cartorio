@@ -61,6 +61,8 @@ impl DockerSavedTarball {
         })
     }
 
+    // TODO should we just put blobstore in `&self`?
+    //
     fn ingest_blob(blobstore: &BlobStore, original_location: &Path) -> io::Result<ManifestDescriptor> {
         //       1. compute the digest
         //       2. gather the size
@@ -68,6 +70,9 @@ impl DockerSavedTarball {
         //       3. create descriptor
         
         let blob_digest = digest::compute_for_file(original_location)?;
+
+        digest::store(original_location, &blob_digest);
+
         let blob_metadata = std::fs::metadata(original_location)?;
         let blob_size = blob_metadata.len();
 

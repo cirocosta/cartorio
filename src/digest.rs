@@ -1,5 +1,6 @@
 extern crate hex;
 extern crate sha2;
+extern crate xattr;
 
 use std::fs::File;
 use std::io;
@@ -53,15 +54,23 @@ pub fn compute_for_string(content: &str) -> String {
     hex::encode(Sha256::digest(content.as_bytes()).as_slice())
 }
 
+const DIGEST_XATTR: &'static str = "digest";
+
 /// Stores digest information into a file.
+///
+///
+/// # Arguments
+///
+/// * `filepath` - path to the file where the digest should be stored into.
+///
 ///
 /// # Remarks
 ///
 /// The filesystem where the file lives must support having extended
 /// attributes set & get from files.
 ///
-fn store() {
-    unimplemented!("TBD");
+pub fn store(filepath: &Path, digest: &str) -> io::Result<()> {
+    xattr::set(filepath, DIGEST_XATTR, digest.as_bytes())
 }
 
 
@@ -72,8 +81,21 @@ fn store() {
 /// The filesystem where the file lives must support having extended
 /// attributes set & get from files.
 ///
-fn retrieve() {
-    unimplemented!("TBD");
+/// # Panics
+///
+/// The method might panic if the stored string is not utf8.
+///
+pub fn retrieve(filepath: &Path) -> io::Result<Option<String>> {
+    let get_opt = xattr::get(filepath, DIGEST_XATTR)?;
+
+    match get_opt {
+        Some(v) => {
+            let value = std::str::from_utf8(&v).unwrap();
+
+            return Ok(Some(value.to_string()));
+        },
+        None => Ok(None),
+    }
 }
 
 /// Adds a `sha256:` scheme to the beginning of a supplied
