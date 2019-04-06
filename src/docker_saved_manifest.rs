@@ -32,14 +32,13 @@ pub struct ImageManifest {
 }
 
 pub struct DockerSavedManifest {
-    images_descriptions: Vec<ImageManifest>,
+    pub images_manifests: Vec<ImageManifest>,
 }
 
 impl FromStr for DockerSavedManifest {
     
     type Err = serde_json::Error;
 
-    
     /// Parses the contents of a multi-image manifest contained within a 
     /// `docker save`d tarball.
     ///
@@ -49,10 +48,10 @@ impl FromStr for DockerSavedManifest {
     /// * `content` - the contents of the `manifest.json` file.
     ///
     fn from_str(content: &str) -> Result<Self, Self::Err> {
-        let images_descriptions: Vec<ImageManifest> = serde_json::from_str(content)?;
+        let images_manifests: Vec<ImageManifest> = serde_json::from_str(content)?;
 
         Ok(DockerSavedManifest{
-            images_descriptions: images_descriptions,
+            images_manifests: images_manifests,
         })
     }
 
@@ -79,11 +78,11 @@ mod docker_saved_manifest_tests {
 
         let manifests: DockerSavedManifest = data.parse().unwrap();
 
-        assert_eq!(manifests.images_descriptions.len(), 1);
-        assert_eq!(manifests.images_descriptions[0].repo_tags.len(), 1,);
-        assert_eq!(manifests.images_descriptions[0].layers.len(), 1,);
+        assert_eq!(manifests.images_manifests.len(), 1);
+        assert_eq!(manifests.images_manifests[0].repo_tags.len(), 1,);
+        assert_eq!(manifests.images_manifests[0].layers.len(), 1,);
         assert_eq!(
-            manifests.images_descriptions[0].config,
+            manifests.images_manifests[0].config,
             "48e2eeb489cdea15786d3622270750508d7385f3b684306703d17ffd50ecd34a.json"
         );
     }

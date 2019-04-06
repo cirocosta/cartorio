@@ -3,7 +3,6 @@ extern crate tempfile;
 use crate::digest;
 use crate::blobstore::{BlobStore};
 use crate::docker_saved_manifest::{DockerSavedManifest, ImageManifest};
-use crate::image_loader::{ImageLoader};
 use crate::registry::{ManifestDescriptor};
 use tempfile::tempdir;
 use std::fs::File;
@@ -22,7 +21,14 @@ pub struct DockerSavedTarball {
     ///
     unpacked_dir: tempfile::TempDir,
 
-    parsed_config: DockerSavedManifest,
+    /// The parsed verison of the `manifest.json` file that
+    /// exists within a `docker save`d tarball containing the
+    /// description of all of the images present in such tarball.
+    ///
+    parsed_manifest: DockerSavedManifest,
+
+    // TODO
+    blobstore: BlobStore,
 }
 
 
@@ -42,7 +48,7 @@ impl DockerSavedTarball {
     /// * the temporary directory will be automatically removed once the object
     ///   goes out of scope.
     ///
-    pub fn new(tarball: &Path) -> io::Result<DockerSavedTarball> {
+    pub fn new(tarball: &Path, blobstore: BlobStore) -> io::Result<DockerSavedTarball> {
         let mut tarball_tmp_dir = tempdir().unwrap();
         let tarball_file = File::open(tarball)?;
 
@@ -53,17 +59,18 @@ impl DockerSavedTarball {
             .path()
             .join("manifest.json"))?;
 
-        let config: DockerSavedManifest = manifest_content.parse()?;
+        let parsed_manifest: DockerSavedManifest = manifest_content.parse()?;
 
         Ok(DockerSavedTarball{
             unpacked_dir: tarball_tmp_dir,
-            parsed_config: config,
+            parsed_manifest: parsed_manifest,
+            blobstore: blobstore,
         })
     }
 
     // TODO should we just put blobstore in `&self`?
     //
-    fn ingest_blob(blobstore: &BlobStore, original_location: &Path) -> io::Result<ManifestDescriptor> {
+    fn ingest_blob(&self, original_location: &Path) -> io::Result<ManifestDescriptor> {
         //       1. compute the digest
         //       2. gather the size
         //       4. move file to blobstore
@@ -76,11 +83,10 @@ impl DockerSavedTarball {
         let blob_metadata = std::fs::metadata(original_location)?;
         let blob_size = blob_metadata.len();
 
-        blobstore.add_blob(original_location);
+        self.blobstore.add_blob(original_location);
 
         Ok(ManifestDescriptor{
-            // TODO receive this as an arg? use enum?
-            media_type: "application/vnd.docker.container.image.v1+json",
+            media_type: "application/vnd.docker.container.image.v1+json", // [cc]: receive this as arg
             size: blob_size,
             digest: blob_digest,
         })
@@ -88,20 +94,47 @@ impl DockerSavedTarball {
 
     /// Loads a single image as described by a manifest.
     ///
-    fn load_image(&self, blobstore: &BlobStore, manifest: &ImageManifest) {
+    fn load_image(&self, manifest: &ImageManifest) -> io::Result<()> {
         let mut descriptors: Vec<ManifestDescriptor> = Vec::with_capacity(manifest.layers.len() + 1);
 
-        // TODO
+        let config_descriptor = self.ingest_blob(
+            &self.unpacked_dir.path().join(&manifest.config),
+        )?;
+
+        Ok(())
     }
-
-}
-
-
-impl ImageLoader for DockerSavedTarball {
 
     /// Loads the contents of all of the images in the contents of a `docker save`d 
     /// tarball into the blobstore.
     ///
+    /// ```txt
+    /// FOR EACH IMAGE IN MANIFEST:
+    ///
+    ///    CONFIG
+    ///     descriptors = append(descriptors, ingest_blob())
+    ///    
+    ///       1. compute the digest
+    ///       2. gather the size
+    ///       4. move file to blobstore
+    ///       3. create descriptor
+    ///    
+    ///    
+    ///    FOR EACH LAYER
+    ///    
+    ///     descriptors = append(descriptors, ingest_blob())
+    ///       1. compute the digest
+    ///       2. gather the size on disk
+    ///       4. move file to blobstore
+    ///       3. create descriptor
+    ///    
+    ///    
+    ///    MANIFEST
+    ///     1. create manifest using `config` + `layer_descriptors`
+    ///     2. write to file
+    ///     3. compute digest
+    ///     4. move to blobstore
+    ///     5. link tags to manifest
+    /// ```
     ///
     /// # Arguments
     ///
@@ -111,35 +144,12 @@ impl ImageLoader for DockerSavedTarball {
     ///
     /// [`BlobStore`]: struct.BlobStore.html
     ///
-    fn load(&self, blobstore: &BlobStore) -> io::Result<()> {
-        // FOR EACH IMAGE IN MANIFEST:
-        //
-        //    CONFIG
-        //     descriptors = append(descriptors, ingest_blob())
-        //    
-        //       1. compute the digest
-        //       2. gather the size
-        //       4. move file to blobstore
-        //       3. create descriptor
-        //    
-        //    
-        //    FOR EACH LAYER
-        //    
-        //     descriptors = append(descriptors, ingest_blob())
-        //       1. compute the digest
-        //       2. gather the size on disk
-        //       4. move file to blobstore
-        //       3. create descriptor
-        //    
-        //    
-        //    MANIFEST
-        //     1. create manifest using `config` + `layer_descriptors`
-        //     2. write to file
-        //     3. compute digest
-        //     4. move to blobstore
-        //     5. link tags to manifest
-        //
-        
+    pub fn load(&self) -> io::Result<()> {
+
+        for image_manifest in &self.parsed_manifest.images_manifests {
+            self.load_image(&image_manifest)?;
+        }
+
         unimplemented!();
     }
 }
