@@ -14,5 +14,5 @@ fn test_docker_saved_tarball() {
     let docker_saved_tarball = DockerSavedTarball::new(&tarball_path, blobstore).unwrap();
 
 
-    assert!(docker_saved_tarball.load(&blobstore).is_ok());
+    assert!(docker_saved_tarball.load().is_ok());
 }

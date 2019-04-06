@@ -27,7 +27,11 @@ pub struct DockerSavedTarball {
     ///
     parsed_manifest: DockerSavedManifest,
 
-    // TODO
+    /// The final owner of the blobs and manifests for the
+    /// registry to serve.
+    ///
+    /// [`BlobStore]: struct.BlobStore.html
+    ///
     blobstore: BlobStore,
 }
 
@@ -68,14 +72,10 @@ impl DockerSavedTarball {
         })
     }
 
-    // TODO should we just put blobstore in `&self`?
-    //
+    /// Ingests a blob, computing the necessary metadata and moving the
+    /// file to the blobstore.
+    ///
     fn ingest_blob(&self, original_location: &Path) -> io::Result<ManifestDescriptor> {
-        //       1. compute the digest
-        //       2. gather the size
-        //       4. move file to blobstore
-        //       3. create descriptor
-        
         let blob_digest = digest::compute_for_file(original_location)?;
 
         digest::store(original_location, &blob_digest);
@@ -150,7 +150,7 @@ impl DockerSavedTarball {
             self.load_image(&image_manifest)?;
         }
 
-        unimplemented!();
+        Ok(())
     }
 }
 

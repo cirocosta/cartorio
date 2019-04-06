@@ -1,6 +1,9 @@
+use crate::digest;
+
 use std::io;
 use std::path::PathBuf;
 use std::path::Path;
+
 
 /// A filesystem-based store for the contents of images.
 ///
@@ -82,10 +85,17 @@ impl BlobStore {
     ///
     /// # Arguments
     ///
-    /// * `blob_path` - path to the blob file in the filesystem.
+    /// * `blob` - path to the blob file in the filesystem.
     ///
-    pub fn add_blob(&self, blob_path: &Path) {
-        unimplemented!("TBD");
+    pub fn add_blob(&self, blob: &Path) -> io::Result<()> {
+        let blob_digest = digest::must_retrieve(blob)?;
+        let blob_filename = digest::prepend_sha_scheme(&blob_digest);
+        let blob_bucket_path = self.bucket_dir.join(blob_filename);
+
+        std::fs::rename(
+            blob,
+            blob_bucket_path,
+        )
     }
 
     /// Links a manifest to a blob that represents it.

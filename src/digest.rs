@@ -98,6 +98,20 @@ pub fn retrieve(filepath: &Path) -> io::Result<Option<String>> {
     }
 }
 
+/// Retrieves the digest of a file or returns an error.
+///
+pub fn must_retrieve(filepath: &Path) -> io::Result<String> {
+    let digest_opt = retrieve(filepath)?;
+
+    match digest_opt {
+        Some(d) => Ok(d),
+        None => Err(io::Error::new(
+            io::ErrorKind::Other, 
+            "digest not found",
+        ))
+    }
+}
+
 /// Adds a `sha256:` scheme to the beginning of a supplied
 /// string.
 ///
