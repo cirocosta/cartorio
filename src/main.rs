@@ -2,10 +2,11 @@
 extern crate clap;
 extern crate cartorio;
 
-use std::path::Path;
-use cartorio::server;
 use cartorio::blobstore::BlobStore;
+use cartorio::docker_saved_tarball::DockerSavedTarball;
+use cartorio::server;
 use clap::{App, AppSettings, Arg, SubCommand};
+use std::path::Path;
 
 fn main() {
     let matches = App::new("cartorio")
@@ -77,12 +78,17 @@ fn main() {
         ("load", Some(m)) => {
             let blobstore = BlobStore::new(
                 Path::new(&value_t!(m, "address", String).unwrap()),
-            );
+            ).unwrap();
 
-            // - let saved_tarball = DockerSavedTarball::new(tarball)?;
-            // - saved_tarball.load().expect("works!");
+            let loader = DockerSavedTarball::new(
+                Path::new(&value_t!(m, "tarball", String).unwrap()),
+                blobstore,
+            )
+            .unwrap();
 
-            unimplemented!("not ready");
+            if let Err(err) = loader.load() {
+                panic!("failed to load docker tarball - {}", err);
+            }
         }
 
         ("pull", Some(_m)) => {

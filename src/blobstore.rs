@@ -181,7 +181,7 @@ impl BlobStore {
             self.manifests_dir
                 .join(name)
                 .join(reference),
-        );
+        )?;
 
         Ok(())
     }

@@ -52,7 +52,7 @@ impl DockerSavedTarball {
     ///   goes out of scope.
     ///
     pub fn new(tarball: &Path, blobstore: BlobStore) -> io::Result<DockerSavedTarball> {
-        let mut tarball_tmp_dir = tempdir().unwrap();
+        let tarball_tmp_dir = tempdir().unwrap();
         let tarball_file = File::open(tarball)?;
 
         tar::Archive::new(tarball_file)
@@ -77,7 +77,7 @@ impl DockerSavedTarball {
     fn ingest_blob(&self, original_location: &Path, media_type: &'static str) -> io::Result<ManifestDescriptor> {
         let blob_digest = digest::compute_for_file(original_location)?;
 
-        digest::store(original_location, &blob_digest);
+        digest::store(original_location, &blob_digest)?;
 
         let blob_metadata = std::fs::metadata(original_location)?;
         let blob_size = blob_metadata.len();
@@ -126,8 +126,8 @@ impl DockerSavedTarball {
             let name = repo_tag_splitted.next().unwrap();
             let tag = repo_tag_splitted.next().unwrap();
 
-            self.blobstore.tag_manifest(&manifest_filename, &name, &tag);
-            self.blobstore.tag_manifest(&manifest_filename, &name, &manifest_filename);
+            self.blobstore.tag_manifest(&manifest_filename, &name, &tag)?;
+            self.blobstore.tag_manifest(&manifest_filename, &name, &manifest_filename)?;
         }
 
         Ok(())

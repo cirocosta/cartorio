@@ -17,10 +17,6 @@ fn test_docker_saved_tarball() {
 
 
 
-
-
-
-
     // check that it contains:
     // - the config loaded
     // - the layers loaded
