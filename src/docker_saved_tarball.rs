@@ -3,13 +3,12 @@ extern crate tempfile;
 use crate::digest;
 use crate::blobstore::{BlobStore};
 use crate::docker_saved_manifest::{DockerSavedManifest, ImageManifest};
-use crate::registry::{ManifestDescriptor};
+use crate::registry::{ManifestDescriptor, Manifest};
 use tempfile::tempdir;
 use std::fs::File;
 use std::fs;
-use std::io::{Read};
 use std::io;
-use std::path::{PathBuf, Path};
+use std::path::Path;
 
 
 /// A tarball that has been generated through `docker save`.
@@ -75,7 +74,7 @@ impl DockerSavedTarball {
     /// Ingests a blob, computing the necessary metadata and moving the
     /// file to the blobstore.
     ///
-    fn ingest_blob(&self, original_location: &Path) -> io::Result<ManifestDescriptor> {
+    fn ingest_blob(&self, original_location: &Path, media_type: &'static str) -> io::Result<ManifestDescriptor> {
         let blob_digest = digest::compute_for_file(original_location)?;
 
         digest::store(original_location, &blob_digest);
@@ -86,22 +85,79 @@ impl DockerSavedTarball {
         self.blobstore.add_blob(original_location)?;
 
         Ok(ManifestDescriptor{
-            media_type: "application/vnd.docker.container.image.v1+json", // [cc]: receive this as arg
+            media_type: media_type,
             size: blob_size,
             digest: blob_digest,
         })
     }
 
+    fn ingest_config(&self, original_location: &Path) -> io::Result<ManifestDescriptor> {
+        self.ingest_blob(original_location, "application/vnd.docker.container.image.v1+json")
+    }
+
+    fn ingest_layer(&self, original_location: &Path) -> io::Result<ManifestDescriptor> {
+        self.ingest_blob(original_location, "application/vnd.docker.image.rootfs.diff.tar")
+    }
+
     /// Loads a single image as described by a manifest.
     ///
     fn load_image(&self, manifest: &ImageManifest) -> io::Result<()> {
-        let mut descriptors: Vec<ManifestDescriptor> = Vec::with_capacity(manifest.layers.len() + 1);
-
-        let config_descriptor = self.ingest_blob(
+        let config_descriptor = self.ingest_config(
             &self.unpacked_dir.path().join(&manifest.config),
         )?;
 
+        let mut layers_descriptors: Vec<ManifestDescriptor> = 
+            Vec::with_capacity(manifest.layers.len() + 1);
+
+        for layer in &manifest.layers {
+            layers_descriptors.push(self.ingest_layer(
+                &self.unpacked_dir.path().join(&layer),
+            )?);
+        }
+
+
+        let manifest_filename = self.
+            ingest_manifest(config_descriptor, layers_descriptors)?;
+
+
+        for repo_tag in &manifest.repo_tags {
+            let mut repo_tag_splitted = repo_tag.split(':');
+
+            let name = repo_tag_splitted.next().unwrap();
+            let tag = repo_tag_splitted.next().unwrap();
+
+            self.blobstore.tag_manifest(&manifest_filename, &name, &tag);
+            self.blobstore.tag_manifest(&manifest_filename, &name, &manifest_filename);
+        }
+
         Ok(())
+    }
+
+
+    /// todo
+    ///
+    /// ```txt
+    ///
+    ///   create manifest from `config` + `layer_descriptors`
+    ///   write to file in the right place
+    ///
+    /// ```
+    ///
+    fn ingest_manifest(&self, 
+        config_desc: ManifestDescriptor, layers_descs: Vec<ManifestDescriptor>,
+    ) -> io::Result<String> {
+
+        let manifest = Manifest {
+            schema_version: 2,
+            media_type: "application/vnd.docker.distribution.manifest.v2+json",
+            config: config_desc,
+            layers: layers_descs,
+        };
+
+        self.blobstore.add_manifest(&manifest)?;
+
+        // tag ..
+        Ok(String::from("hasuhs"))
     }
 
     /// Loads the contents of all of the images in the contents of a `docker save`d 

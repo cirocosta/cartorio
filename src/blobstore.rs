@@ -1,6 +1,10 @@
+extern crate serde_json;
+
 use crate::digest;
+use crate::registry::Manifest;
 
 use std::io;
+use std::io::Write;
 use std::path::PathBuf;
 use std::path::Path;
 
@@ -98,6 +102,28 @@ impl BlobStore {
         )
     }
 
+    pub fn add_manifest(&self, manifest: &Manifest) -> io::Result<()> {
+
+        let manifest_json = serde_json::to_string_pretty(&manifest).unwrap();
+        let manifest_json_digest = digest::compute_for_string(&manifest_json);
+
+        let manifest_bucket_path = self.bucket_dir
+            .join(digest::prepend_sha_scheme(&manifest_json_digest));
+
+        let mut manifest_file = std::fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .open(&manifest_bucket_path)
+            .unwrap();
+
+        // [cc] handle error
+        assert!(manifest_file
+            .write_all(manifest_json.as_bytes())
+            .is_ok());
+
+        Ok(())
+    }
+
 
     /// Links a manifest to a blob that represents it.
     ///
@@ -126,10 +152,10 @@ impl BlobStore {
     /// # Arguments
     ///
     /// * `digest` - location on disk where the manifest file exists.
-    /// * `name` - a `:` separated optional tag for such manifest.
-    /// * `reference` - a `:` separated optional tag for such manifest.
+    /// * `name` - name of the image
+    /// * `reference` - reference.
     ///
-    fn tag_manifest(&self, digest: &str, name: &str, reference: &str) {
+    pub fn tag_manifest(&self, digest: &str, name: &str, reference: &str) {
         unimplemented!("TBD");
     }
 

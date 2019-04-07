@@ -2,7 +2,6 @@ extern crate serde_json;
 
 use serde::Deserialize;
 use std::str::FromStr;
-use std::path::Path;
 
 
 /// Represents the configuration exposed by `docker save`d  tarballs.
