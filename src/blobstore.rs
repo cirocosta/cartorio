@@ -1,6 +1,5 @@
 use std::fs::DirBuilder;
 use std::io::Write;
-use std::io;
 use std::os::unix::fs::symlink;
 use std::path::Path;
 use std::path::PathBuf;
@@ -175,7 +174,7 @@ impl BlobStore {
 
         DirBuilder::new()
             .recursive(true)
-            .create(self.manifests_dir.join(filename))?;
+            .create(self.manifests_dir.join(name))?;
 
         symlink(
             &manifest_bucket_path,

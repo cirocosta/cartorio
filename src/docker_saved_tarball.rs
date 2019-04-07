@@ -1,6 +1,5 @@
 use std::fs::File;
 use std::fs;
-use std::io;
 use std::path::Path;
 
 use tempfile::tempdir;

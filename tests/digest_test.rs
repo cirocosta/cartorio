@@ -2,7 +2,7 @@ extern crate cartorio;
 extern crate tempfile;
 
 use cartorio::digest;
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::io::{Seek, SeekFrom, Write};
 use tempfile::tempfile;
 use tempfile::tempdir;
 
