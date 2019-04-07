@@ -3,10 +3,12 @@ extern crate serde_json;
 use crate::digest;
 use crate::registry::Manifest;
 
+use std::fs::DirBuilder;
 use std::io;
 use std::io::Write;
 use std::path::PathBuf;
 use std::path::Path;
+use std::os::unix::fs::symlink;
 
 
 /// A filesystem-based store for the contents of images.
@@ -102,13 +104,22 @@ impl BlobStore {
         )
     }
 
-    pub fn add_manifest(&self, manifest: &Manifest) -> io::Result<()> {
+    /// Writes an image manifest to the store.
+    ///
+    /// Given a [`Manifest`], this method will serialize the struct into
+    /// JSON, compute its digest and then write it to the bucket of blobs.
+    ///
+    ///
+    /// # Arguments
+    ///
+    /// * `manifest` - the manifest to persist.
+    ///
+    pub fn add_manifest(&self, manifest: &Manifest) -> io::Result<String> {
 
         let manifest_json = serde_json::to_string_pretty(&manifest).unwrap();
         let manifest_json_digest = digest::compute_for_string(&manifest_json);
-
-        let manifest_bucket_path = self.bucket_dir
-            .join(digest::prepend_sha_scheme(&manifest_json_digest));
+        let manifest_filename = digest::prepend_sha_scheme(&manifest_json_digest);
+        let manifest_bucket_path = self.bucket_dir.join(&manifest_filename);
 
         let mut manifest_file = std::fs::OpenOptions::new()
             .write(true)
@@ -116,12 +127,15 @@ impl BlobStore {
             .open(&manifest_bucket_path)
             .unwrap();
 
-        // [cc] handle error
-        assert!(manifest_file
-            .write_all(manifest_json.as_bytes())
-            .is_ok());
+        manifest_file
+            .write_all(manifest_json.as_bytes())?;
 
-        Ok(())
+        digest::store(
+            &manifest_bucket_path, 
+            &manifest_json_digest,
+        )?;
+
+        Ok(manifest_filename)
     }
 
 
@@ -151,12 +165,25 @@ impl BlobStore {
     ///
     /// # Arguments
     ///
-    /// * `digest` - location on disk where the manifest file exists.
+    /// * `filename` - name of the digest file under `bucket_dir`.
     /// * `name` - name of the image
-    /// * `reference` - reference.
+    /// * `reference` - reference (either digest or tag).
     ///
-    pub fn tag_manifest(&self, digest: &str, name: &str, reference: &str) {
-        unimplemented!("TBD");
+    pub fn tag_manifest(&self, filename: &str, name: &str, reference: &str) -> io::Result<()> {
+        let manifest_bucket_path = self.bucket_dir.join(filename);
+
+        DirBuilder::new()
+            .recursive(true)
+            .create(self.manifests_dir.join(filename))?;
+
+        symlink(
+            &manifest_bucket_path,
+            self.manifests_dir
+                .join(name)
+                .join(reference),
+        );
+
+        Ok(())
     }
 
 }

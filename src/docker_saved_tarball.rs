@@ -154,10 +154,9 @@ impl DockerSavedTarball {
             layers: layers_descs,
         };
 
-        self.blobstore.add_manifest(&manifest)?;
+        let manifest_filename = self.blobstore.add_manifest(&manifest)?;
 
-        // tag ..
-        Ok(String::from("hasuhs"))
+        Ok(manifest_filename)
     }
 
     /// Loads the contents of all of the images in the contents of a `docker save`d 
