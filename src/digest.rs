@@ -1,13 +1,11 @@
-extern crate hex;
-extern crate sha2;
-extern crate xattr;
-
 use std::fs::File;
 use std::io;
 use std::io::Read;
 use std::path::{Path};
 
 use sha2::{Digest, Sha256};
+
+use crate::error::Result;
 
 
 /// The xattr field to store the digest.
@@ -28,8 +26,10 @@ const DIGEST_XATTR: &'static str = "digest";
 /// The filesystem where the file lives must support having extended
 /// attributes set & get from files.
 ///
-pub fn store(filepath: &Path, digest: &str) -> io::Result<()> {
-    xattr::set(filepath, DIGEST_XATTR, digest.as_bytes())
+#[inline]
+pub fn store(filepath: &Path, digest: &str) -> Result<()> {
+    xattr::set(filepath, DIGEST_XATTR, digest.as_bytes())?;
+    Ok(())
 }
 
 
@@ -96,7 +96,7 @@ pub fn compute_for_file(filepath: &Path) -> io::Result<String> {
 /// Computes the digest of a file and stores it in its xattr.
 ///
 ///
-pub fn compute_for_file_and_store(filepath: &Path) -> io::Result<String> {
+pub fn compute_for_file_and_store(filepath: &Path) -> Result<String> {
     let digest = compute_for_file(filepath)?;
 
     store(filepath, &digest)?;
@@ -104,7 +104,8 @@ pub fn compute_for_file_and_store(filepath: &Path) -> io::Result<String> {
     Ok(digest)
 }
 
-pub fn retrieve_or_compute_and_store(filepath: &Path) -> io::Result<String> {
+
+pub fn retrieve_or_compute_and_store(filepath: &Path) -> Result<String> {
     let digest_opt = retrieve(filepath)?;
 
     if let Some(d) = digest_opt {
@@ -139,6 +140,7 @@ pub fn compute_for_string(content: &str) -> String {
 /// );
 /// ```
 ///
+#[inline]
 pub fn prepend_sha_scheme(digest: &str) -> String {
     let mut res = String::with_capacity(2);
     res.push_str("sha256:");

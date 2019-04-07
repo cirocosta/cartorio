@@ -1,7 +1,3 @@
-extern crate futures;
-extern crate futures_fs;
-extern crate hyper;
-
 use futures::Future;
 use futures_fs::FsPool;
 use hyper::service::service_fn_ok;
@@ -9,7 +5,9 @@ use hyper::{Body, Method, Request, Response, Server, StatusCode};
 use std::net::SocketAddr;
 use std::path::Path;
 
+const BLOBSTORE_PATH: &'static str = "/tmp/stuff1";
 const BODY_NOT_FOUND: &str = "not found";
+
 
 /// Represents a manifest path.
 ///
@@ -17,6 +15,7 @@ struct BlobPath {
     name: String,
     reference: String,
 }
+
 
 /// Parses a path into a BlobPath.
 ///
@@ -44,6 +43,7 @@ fn parse_generic_blob_path(path_type: &'static str, path: &str) -> Option<BlobPa
     })
 }
 
+
 /// Detects whether the provided `path` is a `BlobPath` and,
 /// if so, returns a `BlobPath`.
 ///
@@ -51,63 +51,12 @@ fn parse_manifests_path(path: &str) -> Option<BlobPath> {
     parse_generic_blob_path("manifests", path)
 }
 
+
 fn parse_blobs_path(path: &str) -> Option<BlobPath> {
     parse_generic_blob_path("blobs", path)
 }
 
-#[cfg(test)]
-mod parsing_tests {
-    use super::*;
 
-    #[test]
-    fn test_parse_manifests_path() {
-        assert!(
-            parse_manifests_path("xxx").is_none(),
-            "must have a `/v2` in the prefix`"
-        );
-
-        assert!(
-            parse_manifests_path("/v2/library/manifests").is_none(),
-            "must have enough fields"
-        );
-
-        assert!(
-            parse_manifests_path("/v2/library/wrong/tag").is_none(),
-            "must have `manifests` after name and before reference"
-        );
-
-        assert_eq!(
-            parse_manifests_path("/v2/library/manifests/tag")
-                .unwrap()
-                .name,
-            "library",
-        );
-
-        assert_eq!(
-            parse_manifests_path("/v2/library/manifests/tag")
-                .unwrap()
-                .reference,
-            "tag",
-        );
-
-        assert_eq!(
-            parse_manifests_path("/v2/library/nginx/manifests/tag")
-                .unwrap()
-                .name,
-            "library/nginx",
-        );
-
-        assert_eq!(
-            parse_manifests_path("/v2/library/nginx/manifests/sha256:7422e18d69adca5354c08f92dd18192fa142eda4cc891d093f22edbb38c4de1b")
-                .unwrap()
-                .reference,
-            "sha256:7422e18d69adca5354c08f92dd18192fa142eda4cc891d093f22edbb38c4de1b",
-        );
-    }
-}
-
-
-const BLOBSTORE_PATH: &'static str = "/tmp/stuff1";
 
 fn handle_registry_blobs(req: &Request<Body>) -> Option<Response<Body>> {
     if req.method() != &Method::GET {
@@ -143,6 +92,7 @@ fn handle_registry_blobs(req: &Request<Body>) -> Option<Response<Body>> {
             .unwrap(),
     )
 }
+
 
 /// Handles requests for manifests.
 ///
@@ -193,6 +143,7 @@ fn handle_registry_manifests(req: &Request<Body>) -> Option<Response<Body>> {
     )
 }
 
+
 fn handle_registry_version_check(req: &Request<Body>) -> Option<Response<Body>> {
     if req.method() != &Method::GET || req.uri().path() != "/v2" {
         return None;
@@ -207,6 +158,7 @@ fn handle_registry_version_check(req: &Request<Body>) -> Option<Response<Body>> 
     )
 }
 
+ 
 fn handle_liveness_check(req: &Request<Body>) -> Option<Response<Body>> {
     if req.method() != &Method::GET || req.uri().path() != "/_live" {
         return None;
@@ -219,6 +171,7 @@ fn handle_liveness_check(req: &Request<Body>) -> Option<Response<Body>> {
             .unwrap(),
     )
 }
+
 
 /// Handles incoming requests and dispatches them to the
 /// appropriate function that is supposed to handle them.
@@ -242,6 +195,7 @@ fn route(req: Request<Body>) -> Response<Body> {
         .unwrap()
 }
 
+
 /// Starts the HTTP server for serving the registry's content.
 ///
 /// # Arguments
@@ -264,4 +218,56 @@ pub fn serve(address: &str, _blobstore: &str) {
 
     println!("listening on {}", address);
     hyper::rt::run(server);
+}
+
+
+#[cfg(test)]
+mod parsing_tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_manifests_path() {
+        assert!(
+            parse_manifests_path("xxx").is_none(),
+            "must have a `/v2` in the prefix`"
+        );
+
+        assert!(
+            parse_manifests_path("/v2/library/manifests").is_none(),
+            "must have enough fields"
+        );
+
+        assert!(
+            parse_manifests_path("/v2/library/wrong/tag").is_none(),
+            "must have `manifests` after name and before reference"
+        );
+
+        assert_eq!(
+            parse_manifests_path("/v2/library/manifests/tag")
+                .unwrap()
+                .name,
+            "library",
+        );
+
+        assert_eq!(
+            parse_manifests_path("/v2/library/manifests/tag")
+                .unwrap()
+                .reference,
+            "tag",
+        );
+
+        assert_eq!(
+            parse_manifests_path("/v2/library/nginx/manifests/tag")
+                .unwrap()
+                .name,
+            "library/nginx",
+        );
+
+        assert_eq!(
+            parse_manifests_path("/v2/library/nginx/manifests/sha256:7422e18d69adca5354c08f92dd18192fa142eda4cc891d093f22edbb38c4de1b")
+                .unwrap()
+                .reference,
+            "sha256:7422e18d69adca5354c08f92dd18192fa142eda4cc891d093f22edbb38c4de1b",
+        );
+    }
 }

@@ -1,6 +1,4 @@
-#[macro_use]
-extern crate clap;
-extern crate cartorio;
+#[macro_use] extern crate clap;
 
 use cartorio::blobstore::BlobStore;
 use cartorio::docker_saved_tarball::DockerSavedTarball;
@@ -77,7 +75,7 @@ fn main() {
     match matches.subcommand() {
         ("load", Some(m)) => {
             let blobstore = BlobStore::new(
-                Path::new(&value_t!(m, "address", String).unwrap()),
+                Path::new(&value_t!(m, "blobstore", String).unwrap()),
             ).unwrap();
 
             let loader = DockerSavedTarball::new(

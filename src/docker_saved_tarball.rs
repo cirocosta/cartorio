@@ -1,14 +1,15 @@
-extern crate tempfile;
-
-use crate::digest;
-use crate::blobstore::{BlobStore};
-use crate::docker_saved_manifest::{DockerSavedManifest, ImageManifest};
-use crate::registry::{ManifestDescriptor, Manifest};
-use tempfile::tempdir;
 use std::fs::File;
 use std::fs;
 use std::io;
 use std::path::Path;
+
+use tempfile::tempdir;
+
+use crate::blobstore::{BlobStore};
+use crate::digest;
+use crate::docker_saved_manifest::{DockerSavedManifest, ImageManifest};
+use crate::error::Result;
+use crate::registry::{ManifestDescriptor, Manifest};
 
 
 /// A tarball that has been generated through `docker save`.
@@ -74,7 +75,7 @@ impl DockerSavedTarball {
     /// Ingests a blob, computing the necessary metadata and moving the
     /// file to the blobstore.
     ///
-    fn ingest_blob(&self, original_location: &Path, media_type: &'static str) -> io::Result<ManifestDescriptor> {
+    fn ingest_blob(&self, original_location: &Path, media_type: &'static str) -> Result<ManifestDescriptor> {
         let blob_digest = digest::compute_for_file(original_location)?;
 
         digest::store(original_location, &blob_digest)?;
@@ -91,17 +92,17 @@ impl DockerSavedTarball {
         })
     }
 
-    fn ingest_config(&self, original_location: &Path) -> io::Result<ManifestDescriptor> {
+    fn ingest_config(&self, original_location: &Path) -> Result<ManifestDescriptor> {
         self.ingest_blob(original_location, "application/vnd.docker.container.image.v1+json")
     }
 
-    fn ingest_layer(&self, original_location: &Path) -> io::Result<ManifestDescriptor> {
+    fn ingest_layer(&self, original_location: &Path) -> Result<ManifestDescriptor> {
         self.ingest_blob(original_location, "application/vnd.docker.image.rootfs.diff.tar")
     }
 
     /// Loads a single image as described by a manifest.
     ///
-    fn load_image(&self, manifest: &ImageManifest) -> io::Result<()> {
+    fn load_image(&self, manifest: &ImageManifest) -> Result<()> {
         let config_descriptor = self.ingest_config(
             &self.unpacked_dir.path().join(&manifest.config),
         )?;
@@ -145,7 +146,7 @@ impl DockerSavedTarball {
     ///
     fn ingest_manifest(&self, 
         config_desc: ManifestDescriptor, layers_descs: Vec<ManifestDescriptor>,
-    ) -> io::Result<String> {
+    ) -> Result<String> {
 
         let manifest = Manifest {
             schema_version: 2,
@@ -199,7 +200,7 @@ impl DockerSavedTarball {
     ///
     /// [`BlobStore`]: struct.BlobStore.html
     ///
-    pub fn load(&self) -> io::Result<()> {
+    pub fn load(&self) -> Result<()> {
 
         for image_manifest in &self.parsed_manifest.images_manifests {
             self.load_image(&image_manifest)?;

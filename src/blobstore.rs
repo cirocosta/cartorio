@@ -1,14 +1,13 @@
-extern crate serde_json;
+use std::fs::DirBuilder;
+use std::io::Write;
+use std::io;
+use std::os::unix::fs::symlink;
+use std::path::Path;
+use std::path::PathBuf;
 
 use crate::digest;
+use crate::error::Result;
 use crate::registry::Manifest;
-
-use std::fs::DirBuilder;
-use std::io;
-use std::io::Write;
-use std::path::PathBuf;
-use std::path::Path;
-use std::os::unix::fs::symlink;
 
 
 /// A filesystem-based store for the contents of images.
@@ -93,7 +92,7 @@ impl BlobStore {
     ///
     /// * `blob` - path to the blob file in the filesystem.
     ///
-    pub fn add_blob(&self, blob: &Path) -> io::Result<()> {
+    pub fn add_blob(&self, blob: &Path) -> Result<()> {
         let blob_digest = digest::retrieve_or_compute_and_store(blob)?;
         let blob_filename = digest::prepend_sha_scheme(&blob_digest);
         let blob_bucket_path = self.bucket_dir.join(blob_filename);
@@ -101,7 +100,9 @@ impl BlobStore {
         std::fs::rename(
             blob,
             blob_bucket_path,
-        )
+        )?;
+
+        Ok(())
     }
 
     /// Writes an image manifest to the store.
@@ -114,7 +115,7 @@ impl BlobStore {
     ///
     /// * `manifest` - the manifest to persist.
     ///
-    pub fn add_manifest(&self, manifest: &Manifest) -> io::Result<String> {
+    pub fn add_manifest(&self, manifest: &Manifest) -> Result<String> {
 
         let manifest_json = serde_json::to_string_pretty(&manifest).unwrap();
         let manifest_json_digest = digest::compute_for_string(&manifest_json);
