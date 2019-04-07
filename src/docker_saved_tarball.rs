@@ -52,7 +52,7 @@ impl DockerSavedTarball {
     /// * the temporary directory will be automatically removed once the object
     ///   goes out of scope.
     ///
-    pub fn new(tarball: &Path, blobstore: BlobStore) -> io::Result<DockerSavedTarball> {
+    pub fn new(tarball: &Path, blobstore: BlobStore) -> Result<DockerSavedTarball> {
         let tarball_tmp_dir = tempdir().unwrap();
         let tarball_file = File::open(tarball)?;
 

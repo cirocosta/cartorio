@@ -46,7 +46,7 @@ impl BlobStore {
     /// Instantiates a blobstore - a place in the filesystem where all of
     /// the blobs associated with an image (as well as the manifest) exists.
     ///
-    pub fn new(root: &Path) -> io::Result<BlobStore> {
+    pub fn new(root: &Path) -> Result<BlobStore> {
         let blobstore = BlobStore {
             bucket_dir: Path::new(root).join("bucket"),
             manifests_dir: Path::new(root).join("manifests"),
@@ -170,7 +170,7 @@ impl BlobStore {
     /// * `name` - name of the image
     /// * `reference` - reference (either digest or tag).
     ///
-    pub fn tag_manifest(&self, filename: &str, name: &str, reference: &str) -> io::Result<()> {
+    pub fn tag_manifest(&self, filename: &str, name: &str, reference: &str) -> Result<()> {
         let manifest_bucket_path = self.bucket_dir.join(filename);
 
         DirBuilder::new()

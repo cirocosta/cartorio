@@ -44,7 +44,7 @@ pub fn store(filepath: &Path, digest: &str) -> Result<()> {
 ///
 /// The method might panic if the stored string is not utf8.
 ///
-pub fn retrieve(filepath: &Path) -> io::Result<Option<String>> {
+pub fn retrieve(filepath: &Path) -> Result<Option<String>> {
     let get_opt = xattr::get(filepath, DIGEST_XATTR)?;
 
     match get_opt {
@@ -64,7 +64,7 @@ pub fn retrieve(filepath: &Path) -> io::Result<Option<String>> {
 ///
 /// * `reader` - the supplier of bytes that we compute the hash against.
 ///
-pub fn compute(mut reader: impl Read) -> io::Result<String> {
+pub fn compute(mut reader: impl Read) -> Result<String> {
     let mut hasher = Sha256::new();
     let mut buf = [0; 1 << 12];
 
@@ -88,7 +88,7 @@ pub fn compute(mut reader: impl Read) -> io::Result<String> {
 ///
 /// * `filepath` - the path to the file to open and compute the digest.
 ///
-pub fn compute_for_file(filepath: &Path) -> io::Result<String> {
+pub fn compute_for_file(filepath: &Path) -> Result<String> {
     compute(File::open(filepath)?)
 }
 
