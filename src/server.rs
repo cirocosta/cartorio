@@ -1,11 +1,13 @@
+use std::net::SocketAddr;
+
 use futures::Future;
 use futures_fs::FsPool;
 use hyper::service::service_fn_ok;
 use hyper::{Body, Method, Request, Response, Server, StatusCode};
-use std::net::SocketAddr;
-use std::path::Path;
 
-const BLOBSTORE_PATH: &'static str = "/tmp/stuff1";
+use crate::blobstore::BlobStore;
+
+
 const BODY_NOT_FOUND: &str = "not found";
 
 
@@ -57,34 +59,67 @@ fn parse_blobs_path(path: &str) -> Option<BlobPath> {
 }
 
 
+/// Starts an HTTP server for serving the registry's content.
+///
+/// # Arguments
+///
+/// * `address` - IPV4 address to bind to listen for requests
+///
+/// See `loader`.
+///
+pub fn serve(address: &str, blobstore: BlobStore) {
+    let addr: SocketAddr = address.parse().unwrap();
 
-fn handle_registry_blobs(req: &Request<Body>) -> Option<Response<Body>> {
+    let routing_svc = move || {
+        let bstore = blobstore.clone();
+
+        service_fn_ok(move |req| {
+            if let Some(resp) = handle_liveness_check(&req) {
+                return resp;
+            } else if let Some(resp) = handle_registry_version_check(&req) {
+                return resp;
+            } else if let Some(resp) = handle_registry_manifests(&req, &bstore) {
+                return resp;
+            } else if let Some(resp) = handle_registry_blobs(&req, &bstore) {
+                return resp;
+            }
+
+            Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .body(Body::from(BODY_NOT_FOUND))
+                .unwrap()
+        })
+    };
+
+    let server = Server::bind(&addr)
+        .serve(routing_svc)
+        .map_err(|e| println!("server error: {}", e));
+
+    println!("listening on http://{}", address);
+
+    hyper::rt::run(server);
+}
+
+
+/// Handles blob requests.
+///
+fn handle_registry_blobs(req: &Request<Body>, blobstore: &BlobStore) -> Option<Response<Body>> {
     if req.method() != &Method::GET {
         return None;
     }
 
-    let blob_info = match parse_blobs_path(req.uri().path()) {
-        Some(m) => m,
-        _ => return None,
-    };
+    let blob_info = parse_blobs_path(req.uri().path())?;
 
+    let file_path = blobstore
+        .get_blob(&blob_info.reference);
 
-    let file_path = Path::new(BLOBSTORE_PATH)
-            .join("bucket")
-            .join(&blob_info.reference);
-
-    // size
-    // digest
-    // file
-    let blob_size = std::fs::metadata(&file_path).unwrap().len();
-
-    let file = FsPool::default().read(file_path, Default::default());
+    let file = FsPool::default()
+        .read(file_path, Default::default());
 
     Some(
         Response::builder()
             .header("content-type", "application/octet-stream")
             .header("docker-content-digest", blob_info.reference.as_bytes())
-            .header("content-length", blob_size)
             .header("etag", blob_info.reference.as_bytes())
             .header("docker-distribution-api-version", "registry/2.0")
             .status(StatusCode::OK)
@@ -100,31 +135,35 @@ fn handle_registry_blobs(req: &Request<Body>) -> Option<Response<Body>> {
 /// GET /v2/foo/bar/manifests/tag
 /// ```
 ///
-fn handle_registry_manifests(req: &Request<Body>) -> Option<Response<Body>> {
+fn handle_registry_manifests(req: &Request<Body>, blobstore: &BlobStore) -> Option<Response<Body>> {
     if req.method() != &Method::GET {
         return None;
     }
 
-    let manifest_info = match parse_manifests_path(req.uri().path()) {
-        Some(m) => m,
-        _ => return None,
+    let manifest_info = parse_manifests_path(req.uri().path())?;
+
+    let manifest_file_path = match std::fs::read_link(
+        blobstore.get_manifest(
+            &manifest_info.name,
+            &manifest_info.reference,
+        ),
+    ) {
+        Err(err) => {
+            panic!("oh damn, it probably doesn't exist - {}", err);
+        },
+
+        Ok(fp) => fp,
     };
 
-    let manifest_digest_path = std::fs::read_link(
-        Path::new(BLOBSTORE_PATH)
-            .join("manifests")
-            .join(&manifest_info.name)
-            .join(&manifest_info.reference),
-    )
-    .unwrap();
-
-    let manifest_digest = manifest_digest_path.file_name().unwrap().to_str().unwrap();
+    let manifest_digest = manifest_file_path
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_owned();
 
     let file = FsPool::default().read(
-        Path::new(BLOBSTORE_PATH)
-            .join("manifests")
-            .join(&manifest_info.name)
-            .join(&manifest_info.reference),
+        manifest_file_path,
         Default::default(),
     );
 
@@ -134,8 +173,8 @@ fn handle_registry_manifests(req: &Request<Body>) -> Option<Response<Body>> {
                 "content-type",
                 "application/vnd.docker.distribution.manifest.v2+json",
             )
-            .header("docker-content-digest", manifest_digest)
-            .header("etag", manifest_digest)
+            .header("docker-content-digest", manifest_digest.as_bytes())
+            .header("etag", manifest_digest.as_bytes())
             .header("docker-distribution-api-version", "registry/2.0")
             .status(StatusCode::OK)
             .body(Body::wrap_stream(file))
@@ -172,53 +211,6 @@ fn handle_liveness_check(req: &Request<Body>) -> Option<Response<Body>> {
     )
 }
 
-
-/// Handles incoming requests and dispatches them to the
-/// appropriate function that is supposed to handle them.
-///
-fn route(req: Request<Body>) -> Response<Body> {
-    println!("-> {} {}", req.method(), req.uri().path());
-
-    if let Some(resp) = handle_liveness_check(&req) {
-        return resp;
-    } else if let Some(resp) = handle_registry_version_check(&req) {
-        return resp;
-    } else if let Some(resp) = handle_registry_manifests(&req) {
-        return resp;
-    } else if let Some(resp) = handle_registry_blobs(&req) {
-        return resp;
-    }
-
-    Response::builder()
-        .status(StatusCode::NOT_FOUND)
-        .body(Body::from(BODY_NOT_FOUND))
-        .unwrap()
-}
-
-
-/// Starts the HTTP server for serving the registry's content.
-///
-/// # Arguments
-///
-/// * `address` - IPV4 address to bind to listen for requests
-/// * `blobstore` - path where all blobs, manifests and configurations exist.
-///
-///
-/// # Remarks
-///
-/// The contents of the `blobstore` must have been initialized beforehand.
-/// See `loader`.
-///
-pub fn serve(address: &str, _blobstore: &str) {
-    let addr: SocketAddr = address.parse().unwrap();
-
-    let server = Server::bind(&addr)
-        .serve(|| service_fn_ok(route))
-        .map_err(|e| println!("server error: {}", e));
-
-    println!("listening on {}", address);
-    hyper::rt::run(server);
-}
 
 
 #[cfg(test)]

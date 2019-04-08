@@ -73,6 +73,7 @@ fn main() {
         .get_matches();
 
     match matches.subcommand() {
+
         ("load", Some(m)) => {
             let blobstore = BlobStore::new(
                 Path::new(&value_t!(m, "blobstore", String).unwrap()),
@@ -89,16 +90,23 @@ fn main() {
             }
         }
 
+
         ("pull", Some(_m)) => {
             unimplemented!("not ready!");
         }
 
+
         ("serve", Some(m)) => {
+            let blobstore = BlobStore::new(
+                Path::new(&value_t!(m, "blobstore", String).unwrap()),
+            ).unwrap();
+
             server::serve(
                 &value_t!(m, "address", String).unwrap(),
-                &value_t!(m, "blobstore", String).unwrap(),
+                blobstore,
             );
         }
+
 
         _ => unreachable!(),
     }

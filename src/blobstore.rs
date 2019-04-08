@@ -29,6 +29,7 @@ use crate::registry::Manifest;
 ///           └── sha256:sha256(manifest_generated) --> ../../bucket/sha256:sha256(manifest_generated)
 /// ```
 ///
+#[derive(Clone)]
 pub struct BlobStore {
 
     /// Where blobs exist 
@@ -40,15 +41,21 @@ pub struct BlobStore {
     pub manifests_dir: PathBuf,
 }
 
+
 impl BlobStore {
+
+    const BUCKET_DIR_NAME: &'static str = "bucket";
+    const MANIFESTS_DIR_NAME: &'static str = "manifests";
+
 
     /// Instantiates a blobstore - a place in the filesystem where all of
     /// the blobs associated with an image (as well as the manifest) exists.
     ///
     pub fn new(root: &Path) -> Result<BlobStore> {
+
         let blobstore = BlobStore {
-            bucket_dir: Path::new(root).join("bucket"),
-            manifests_dir: Path::new(root).join("manifests"),
+            bucket_dir: root.join(BlobStore::BUCKET_DIR_NAME),
+            manifests_dir: root.join(BlobStore::MANIFESTS_DIR_NAME),
         };
 
         std::fs::DirBuilder::new()
@@ -60,6 +67,44 @@ impl BlobStore {
             .create(&blobstore.manifests_dir)?;
 
         Ok(blobstore)
+    }
+
+
+    /// Retrieves the path in the filesystem to the desired blob.
+    ///
+    ///
+    /// # Arguments
+    ///
+    /// * `name`: name of the blob (e.g., `sha256:abcdef`).
+    ///
+    ///
+    /// # Remarks
+    ///
+    /// This method WILL NOT check if the file exists or not as this would
+    /// require making use of blocking syscalls.
+    ///
+    pub fn get_blob(&self, name: &str) -> PathBuf {
+        self.bucket_dir.join(&name)
+    }
+
+
+    /// Retrieves the path in the filesystem to the desired blob.
+    ///
+    ///
+    /// # Arguments
+    ///
+    /// * `name`: name of the blob (e.g., `sha256:abcdef`).
+    ///
+    ///
+    /// # Remarks
+    ///
+    /// This method WILL NOT check if the file exists or not as this would
+    /// require making use of blocking syscalls.
+    ///
+    pub fn get_manifest(&self, name: &str, reference: &str) -> PathBuf {
+        self.manifests_dir
+            .join(&name)
+            .join(&reference)
     }
 
 
