@@ -113,13 +113,19 @@ fn handle_registry_blobs(req: &Request<Body>, blobstore: &BlobStore) -> Option<R
     let file_path = blobstore
         .get_blob(&blob_info.reference);
 
+    let file_size = std::fs::metadata(&file_path)
+        .unwrap()
+        .len();
+
     let file = FsPool::default()
         .read(file_path, Default::default());
+
 
     Some(
         Response::builder()
             .header("content-type", "application/octet-stream")
             .header("docker-content-digest", blob_info.reference.as_bytes())
+            .header("content-length", file_size)
             .header("etag", blob_info.reference.as_bytes())
             .header("docker-distribution-api-version", "registry/2.0")
             .status(StatusCode::OK)
@@ -142,7 +148,7 @@ fn handle_registry_manifests(req: &Request<Body>, blobstore: &BlobStore) -> Opti
 
     let manifest_info = parse_manifests_path(req.uri().path())?;
 
-    let manifest_file_path = match std::fs::read_link(
+    let file_path = match std::fs::read_link(
         blobstore.get_manifest(
             &manifest_info.name,
             &manifest_info.reference,
@@ -155,15 +161,19 @@ fn handle_registry_manifests(req: &Request<Body>, blobstore: &BlobStore) -> Opti
         Ok(fp) => fp,
     };
 
-    let manifest_digest = manifest_file_path
+    let manifest_digest = file_path
         .file_name()
         .unwrap()
         .to_str()
         .unwrap()
         .to_owned();
 
+    let file_size = std::fs::metadata(&file_path)
+        .unwrap()
+        .len();
+
     let file = FsPool::default().read(
-        manifest_file_path,
+        file_path,
         Default::default(),
     );
 
@@ -174,6 +184,7 @@ fn handle_registry_manifests(req: &Request<Body>, blobstore: &BlobStore) -> Opti
                 "application/vnd.docker.distribution.manifest.v2+json",
             )
             .header("docker-content-digest", manifest_digest.as_bytes())
+            .header("content-length", file_size)
             .header("etag", manifest_digest.as_bytes())
             .header("docker-distribution-api-version", "registry/2.0")
             .status(StatusCode::OK)
@@ -184,8 +195,15 @@ fn handle_registry_manifests(req: &Request<Body>, blobstore: &BlobStore) -> Opti
 
 
 fn handle_registry_version_check(req: &Request<Body>) -> Option<Response<Body>> {
-    if req.method() != &Method::GET || req.uri().path() != "/v2" {
+    println!("path = {}", req.uri().path());
+
+    if req.method() != &Method::GET  {
         return None;
+    }
+
+    match req.uri().path() {
+        "/v2" | "/v2/" => (),
+        _ => return None,
     }
 
     Some(
