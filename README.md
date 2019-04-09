@@ -49,6 +49,16 @@ docker pull $MACHINE_IP:5000/another-image
 ```
 
 
+### Kubernetes
+
+Being `cartorio` a tool that can serve any amount of container images, the use of `cartorio` with Kubernetes
+can fit multiple purposes, more interestingly:
+
+- providing the necessary infratructure images for bootstrapping an airgapped Kubernetes cluster, and
+- in a single container, distribute images that can't be retrieved fr
+
+
+
 ## Scope
 
 `cartorio`'s scope is limited **only** to:
