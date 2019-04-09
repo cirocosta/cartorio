@@ -179,14 +179,11 @@ fn handle_registry_manifests(req: &Request<Body>, blobstore: &BlobStore) -> Opti
 
     Some(
         Response::builder()
-            .header(
-                "content-type",
-                "application/vnd.docker.distribution.manifest.v2+json",
-            )
-            .header("docker-content-digest", manifest_digest.as_bytes())
             .header("content-length", file_size)
-            .header("etag", manifest_digest.as_bytes())
+            .header("content-type", "application/vnd.docker.distribution.manifest.v2+json")
             .header("docker-distribution-api-version", "registry/2.0")
+            .header("docker-content-digest", manifest_digest.as_bytes())
+            .header("etag", manifest_digest.as_bytes())
             .status(StatusCode::OK)
             .body(Body::wrap_stream(file))
             .unwrap(),

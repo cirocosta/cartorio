@@ -87,7 +87,7 @@ impl DockerSavedTarball {
         Ok(ManifestDescriptor{
             media_type: media_type,
             size: blob_size,
-            digest: blob_digest,
+            digest: digest::prepend_sha_scheme(&blob_digest),
         })
     }
 
