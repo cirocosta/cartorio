@@ -57,11 +57,11 @@ impl BlobStore {
             manifests_dir: root.join(BlobStore::MANIFESTS_DIR_NAME),
         };
 
-        std::fs::DirBuilder::new()
+        DirBuilder::new()
             .recursive(true)
             .create(&blobstore.bucket_dir)?;
 
-        std::fs::DirBuilder::new()
+        DirBuilder::new()
             .recursive(true)
             .create(&blobstore.manifests_dir)?;
 
@@ -74,7 +74,7 @@ impl BlobStore {
     ///
     /// # Arguments
     ///
-    /// * `name`: name of the blob (e.g., `sha256:abcdef`).
+    /// * `name`: name of the blob with the digest scheme (e.g., `sha256:abcdef`).
     ///
     ///
     /// # Remarks
@@ -137,7 +137,12 @@ impl BlobStore {
     ///
     pub fn add_blob(&self, blob: &Path) -> Result<()> {
         let blob_digest = digest::retrieve_or_compute_and_store(blob)?;
-        let blob_filename = digest::prepend_sha_scheme(&blob_digest);
+
+        self.add_blob_with_digest(blob, &blob_digest)
+    }
+
+    pub fn add_blob_with_digest(&self, blob: &Path, digest: &str) -> Result<()> {
+        let blob_filename = digest::prepend_sha_scheme(&digest);
         let blob_bucket_path = self.bucket_dir.join(blob_filename);
 
         std::fs::rename(

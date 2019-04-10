@@ -1,10 +1,12 @@
 use std::str::FromStr;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::collections::HashMap;
+use std::fs;
 
 use serde::Deserialize;
 
 use crate::blobstore::BlobStore;
+use crate::digest;
 use crate::error::Result;
 
 
@@ -98,6 +100,15 @@ pub struct OciImageLayout {
     ///
     blobstore: BlobStore,
 
+    /// The representation of the OCI Image Index found at the OCI Image Layout
+    /// directory.
+    ///
+    image_index: OciImageIndex,
+
+    /// Root directory of the image layout.
+    ///
+    root_dir: PathBuf,
+
 }
 
 
@@ -113,7 +124,15 @@ impl OciImageLayout {
     /// * `blobstore` - a BlobStore to own the images from such directory.
     ///
     pub fn new(dir: &Path, name: &str, blobstore: BlobStore) -> Result<OciImageLayout> {
-        unimplemented!();
+        let index_content = fs::read_to_string(dir.join("index.json"))?;
+
+        let image_index: OciImageIndex = index_content.parse()?;
+
+        Ok(OciImageLayout{
+            blobstore: blobstore,
+            image_index: image_index,
+            root_dir: dir.to_owned(),
+        })
     }
 
 
@@ -151,12 +170,37 @@ impl OciImageLayout {
     ///
     ///
     pub fn load(&self) -> Result<()> {
-        // move all blobs over to the blobstore
-        // parse index.json (OciImageIndex)
-        // for each manifest:
-        //    tag accordingly
+        let blob_contents_dir = self.root_dir.join("blobs").join("sha256");
 
-        unimplemented!();
+        for entry in fs::read_dir(blob_contents_dir)? {
+            let blob = entry.unwrap();
+
+            self.blobstore.add_blob_with_digest(
+                blob.path().as_ref(),
+                blob.file_name().to_str().unwrap(),
+            )?;
+        }
+
+        for manifest in &self.image_index.manifests {
+            let manifest_name = digest::prepend_sha_scheme(&manifest.digest);
+            let manifest_path = self.blobstore.get_blob(&manifest_name);
+
+            // tagging digest to the digest
+            self.blobstore.tag_manifest(&manifest_name, "test", &manifest_name)?;
+        }
+
+
+        // TAGGING
+        //
+        //    name: supplied through `new`
+        //    filename: we know from the index
+        //    reference:
+        //     - for the digest: we know from the index;
+        //     - for tag: we need to parse the properties map
+        //
+
+
+        Ok(())
     }
 
 }

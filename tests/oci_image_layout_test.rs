@@ -1,4 +1,8 @@
-use cartorio::oci_image_layout::OciImageIndex;
+use cartorio::oci_image_layout::{OciImageIndex, OciImageLayout};
+use cartorio::blobstore::BlobStore;
+
+use tempfile::tempdir;
+
 
 const OCI_IMAGE_INDEX_SAMPLE: &'static str = r#"{
   "schemaVersion": 2,
@@ -18,8 +22,26 @@ const OCI_IMAGE_INDEX_SAMPLE: &'static str = r#"{
   ]
 }"#;
 
+
 #[test]
 fn parses_image_index() {
     let parsed: OciImageIndex = OCI_IMAGE_INDEX_SAMPLE.parse().unwrap();
-
 }
+
+
+#[test]
+fn new_without_index_fails() {
+    let blobstore_root_dir = tempdir().unwrap();
+    let blobstore = BlobStore::new(blobstore_root_dir.path()).unwrap();
+
+    let image_layout_dir = tempdir().unwrap();
+
+    assert!(
+        OciImageLayout::new(
+            image_layout_dir.path(),
+            "test",
+            blobstore,
+        ).is_err(),
+    );
+}
+
