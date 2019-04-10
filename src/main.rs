@@ -22,36 +22,12 @@ fn main() {
                         .short("b")
                         .long("blobstore")
                         .help("Directory where blobs, manifests and configurations are saved to"),
-                    Arg::with_name("tarball")
-                        .required(true)
-                        .default_value("./image.tar")
-                        .long("tarball")
-                        .short("t")
+                    Arg::with_name("docker-save-tarball")
+                        .long("docker-save-tarball")
                         .help("Tarball to load into the registry"),
-                ]),
-        )
-        .subcommand(
-            SubCommand::with_name("pull")
-                .about(
-                    "Loads `docker save`d tarballs into cartorio's internal filesystem hierarchy",
-                )
-                .args(&[
-                    Arg::with_name("url")
-                        .default_value("https://registry-1.docker.io")
-                        .short("u")
-                        .long("url")
-                        .help("URL of the registry"),
-                    Arg::with_name("name")
-                        .required(true)
-                        .takes_value(true)
-                        .short("n")
-                        .long("name")
-                        .help("Name of the image to pull"),
-                    Arg::with_name("reference")
-                        .default_value("latest")
-                        .long("r")
-                        .short("reference")
-                        .help("Image reference - tag or digest (including `sha256:`)"),
+                    Arg::with_name("oci-image-layout")
+                        .long("oci-image-layout")
+                        .help("Directory where an OCI Image Layout exists"),
                 ]),
         )
         .subcommand(
@@ -75,24 +51,34 @@ fn main() {
     match matches.subcommand() {
 
         ("load", Some(m)) => {
+            let mut something_loaded = false;
+
             let blobstore = BlobStore::new(
                 Path::new(&value_t!(m, "blobstore", String).unwrap()),
             ).unwrap();
 
-            let loader = DockerSavedTarball::new(
-                Path::new(&value_t!(m, "tarball", String).unwrap()),
-                blobstore,
-            )
-            .unwrap();
+            if let Ok(docker_saved_tarball) = &value_t!(m, "docker-save-tarball", String) {
+                let loader = DockerSavedTarball::new(
+                    Path::new(docker_saved_tarball), blobstore,
+                ).unwrap();
 
-            if let Err(err) = loader.load() {
-                panic!("failed to load docker tarball - {}", err);
+                if let Err(err) = loader.load() {
+                    panic!("failed to load docker tarball - {}", err);
+                }
+
+                something_loaded = true;
             }
-        }
 
+            if let Ok(oci_image_layout) = &value_t!(m, "oci-image-layout", String) {
+                unimplemented!("TBD");
 
-        ("pull", Some(_m)) => {
-            unimplemented!("not ready!");
+                something_loaded = true;
+            }
+
+            if !something_loaded {
+                println!("error: must specify something to be loaded");
+                std::process::exit(1);
+            }
         }
 
 

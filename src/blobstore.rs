@@ -15,18 +15,17 @@ use crate::registry::Manifest;
 /// the registry are served from.
 ///
 /// ```txt
-/// (blobstore)
-/// .
-/// │
-/// ├── bucket
-/// │   ├── sha256:sha256(manifest_generated)
-/// │   └── sha256:48e2eeb489cdea1578....0ecd34a
-/// │
-/// └── manifests
-///     └── library
-///         └─ nginx
-///           ├── latest -> ../../bucket/sha256:sha256(manifest_generated)
-///           └── sha256:sha256(manifest_generated) --> ../../bucket/sha256:sha256(manifest_generated)
+///
+///    .
+///    ├── bucket
+///    │   ├── sha256:sha256(manifest_generated)
+///    │   └── sha256:48e2eeb489cdea1578....0ecd34a
+///    │
+///    └── manifests
+///        └── library
+///            └─ nginx
+///              ├── latest -> ../../bucket/sha256:sha256(manifest_generated)
+///              └── sha256:sha256(manifest_generated) --> ../../bucket/sha256:sha256(manifest_generated)
 /// ```
 ///
 #[derive(Clone)]

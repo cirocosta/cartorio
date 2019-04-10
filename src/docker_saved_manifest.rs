@@ -1,5 +1,6 @@
-use serde::Deserialize;
 use std::str::FromStr;
+
+use serde::Deserialize;
 
 
 /// Represents the configuration exposed by `docker save`d  tarballs.

@@ -5,3 +5,4 @@ pub mod docker_saved_tarball;
 pub mod registry;
 pub mod server;
 pub mod error;
+pub mod oci_image_layout;
