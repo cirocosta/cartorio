@@ -12,7 +12,7 @@ use crate::error::Result;
 /// Platform information associated with a manifest.
 ///
 #[derive(Deserialize)]
-#[serde(rename_all = "PascalCase")]
+#[serde(rename_all = "camelCase")]
 struct OciManifestPlatform {
     architecture: String,
     os: String,
@@ -23,7 +23,7 @@ struct OciManifestPlatform {
 /// Image Index.
 ///
 #[derive(Deserialize)]
-#[serde(rename_all = "PascalCase")]
+#[serde(rename_all = "camelCase")]
 struct OciImageIndexManifest {
     media_type: String,
     digest: String,
@@ -33,6 +33,8 @@ struct OciImageIndexManifest {
 }
 
 
+/// Representation of an OCI Image Index.
+///
 /// The image index acts as a pointer to manifests that can be
 /// found under the `blobs` directory, providing not only the
 /// content-addressable identifier of such manifests, but also
@@ -40,10 +42,22 @@ struct OciImageIndexManifest {
 /// annotations).
 ///
 #[derive(Deserialize)]
-#[serde(rename_all = "PascalCase")]
-struct OciImageIndex {
+#[serde(rename_all = "camelCase")]
+pub struct OciImageIndex {
     schema_version: u8,
     manifests: Vec<OciImageIndexManifest>,
+}
+
+impl FromStr for OciImageIndex {
+
+    type Err = serde_json::Error;
+
+    fn from_str(content: &str) -> std::result::Result<Self, Self::Err> {
+        let image_index: OciImageIndex = serde_json::from_str(content)?;
+
+        Ok(image_index)
+    }
+
 }
 
 
