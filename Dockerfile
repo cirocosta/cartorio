@@ -1,4 +1,4 @@
-FROM rust:1.33 AS rust
+FROM rust:1.34 AS rust
 
 
 FROM rust AS base
