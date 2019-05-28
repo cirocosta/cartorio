@@ -18,4 +18,8 @@ outputs:
   path: bin
 
 run: 
-  path: cargo install --path=. --root=.
+  path: cargo 
+  args:
+    - install 
+    - --path=. 
+    - --root=.
