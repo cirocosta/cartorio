@@ -23,9 +23,13 @@ fn main() {
                         .long("blobstore")
                         .help("Directory where blobs, manifests and configurations are saved to"),
                     Arg::with_name("docker-save-tarball")
+                        .value_name("TARBALL")
+                        .takes_value(true)
                         .long("docker-save-tarball")
                         .help("Tarball to load into the registry"),
                     Arg::with_name("oci-image-layout")
+                        .value_name("DIRECTORY")
+                        .takes_value(true)
                         .long("oci-image-layout")
                         .help("Directory where an OCI Image Layout exists"),
                 ]),

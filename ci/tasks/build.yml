@@ -17,4 +17,5 @@ inputs:
 outputs:
 - name: target
 
-run: {path: ./ci/tasks/scripts/build.sh}
+run: 
+  path: ./ci/tasks/scripts/build.shk

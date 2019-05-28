@@ -1,0 +1,18 @@
+---
+platform: linux
+
+image_resource:
+  type: registry-image
+  source: {repository: docker}
+
+inputs:
+- name: repository
+
+run:
+  path: /bin/sh
+  args:
+    - -cex
+    - |
+      apk add --update -qqq bash
+      /bin/bash repository/ci/tasks/scripts/start-docker.sh
+      /bin/bash repository/ci/tasks/scripts/integration.sh

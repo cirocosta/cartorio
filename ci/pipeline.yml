@@ -34,20 +34,22 @@ jobs:
     public: true
     serial: true
     plan:
-      - aggregate:
+      - in_parallel:
         - get: repository
           trigger: true
         - get: version
-      - aggregate:
-        - task: build-image
-          privileged: true
-          file: repository/ci/tasks/build-image.yml
-        - task: build-linux-musl
-          file: repository/ci/tasks/build.yml
-          params: { TARGET: x86_64-unknown-linux-musl }
-        - task: build-linux-gnu
-          file: repository/ci/tasks/build.yml
-          params: { TARGET: x86_64-unknown-linux-gnu }
+      - in_parallel:
+          fail_fast: true
+          steps:
+            - task: build-image
+              privileged: true
+              file: repository/ci/tasks/build-image.yml
+            - task: build-linux-gnu
+              file: repository/ci/tasks/build.yml
+              params: { TARGET: x86_64-unknown-linux-gnu }
+            - task: integration
+              privileged: true
+              file: repository/ci/tasks/integration.yml
       - put: container-image
         inputs: [image, version]
         get_params: {format: oci}
