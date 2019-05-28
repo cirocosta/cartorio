@@ -10,14 +10,12 @@ resources:
     type: git
     source:
       uri: https://((github-token))@github.com/cirocosta/cartorio
-      branch: oci-image-layout
       ignore_paths: [ ./VERSION ]
 
   - name: integration-image-dockerfile
     type: git
     source:
       uri: https://((github-token))@github.com/cirocosta/cartorio
-      branch: oci-image-layout
       ignore_paths: [ ./ci/dockerfiles/integration/Dockerfile ]
 
   - name: builder-task
