@@ -15,4 +15,4 @@ run:
     - |
       apk add --update -qqq bash iptables
       repository/ci/tasks/scripts/start-docker.sh
-      repository/ci/tasks/scripts/integration.sh
+      repository/integration/docker-tarball.sh
