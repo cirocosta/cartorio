@@ -17,7 +17,7 @@
 ```
 
 
-Here you can find an answer to "what's the minimum I should implement to serve images to container engines?"
+Here you can find an answer to "what's the minimum I should implement to serve images to container engines?", or, how does that `REGISTRY API` piece looks like in practice.
 
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
@@ -162,7 +162,7 @@ Connection: close
 There's not much to focus on here aside from:
 
 - `Docker-Distribution-Api-Version`: this header *should* be set as clients *may* require this header as a way of verifying if the endpoint setves the API.
-- the body *might* be interpreted or not - there the registry implementor is able to tell the client which paths are supported, even though no spec says how that object should be written :shrug:
+- the body *might* be interpreted or not - there the registry implementor is able to tell the client which paths are supported, even though no spec says how that object should be written `¯\_(ツ)_/¯`
 
 
 
