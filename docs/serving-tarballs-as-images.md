@@ -1,12 +1,15 @@
 # serving tarballs as images
 
-`cartorio` is meant to act as a thin layer on top of content to serve that content from consumers of the registry API. Here you can get up to speed in terms of knowing how serving content through a registry works.
+`cartorio` is meant to act as a thin layer on top of content to serve that content from consumers of the registry API. 
+
+Here you can find an answer to "what's the minimum I should implement to serve images to container engines?"
 
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 
+- [literature](#literature)
 - [following the pcap](#following-the-pcap)
   - [a simple image](#a-simple-image)
   - ["sniffing the wire"](#sniffing-the-wire)
@@ -15,6 +18,20 @@
 - [topics](#topics)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+
+## literature
+
+**ps.: if you don't care about specifications and standards, go straight to [the next section](#following-the-pcap)**
+
+Most of the container-related tech that we use is now in the process of being standardized under the [Open Containers Initiative (OCI)](https://www.opencontainers.org/):
+
+- how to run a container? see [OCI Runtime Spec](https://github.com/opencontainers/runtime-spec)
+- how can a container image be described? see [OCI Image Spec](https://github.com/opencontainers/image-spec)
+- how could a container image be distributed? see [OCI Distribution Spec](https://github.com/opencontainers/distribution-spec)
+
+For the purpose of describing `cartorio`, here we focus only on the later - the distribution spec - even though pratically, that's pretty much the same as the [Docker Registry HTTP API V2](https://docs.docker.com/registry/spec/api/).
+
 
 
 ## following the pcap
@@ -42,6 +59,7 @@ FROM scratch
 ADD ./file.txt /file.txt
 ```
 
+
 Build this image, and we can see the layers generated:
 
 ```sh
@@ -56,6 +74,7 @@ IMAGE           CREATED BY
 24cca6f78bbd    ADD ./file.txt /file.txt # buildkit 
 ```
 
+
 Having the image there, we can now push it to a registry and inspect the reques flow.
 
 
@@ -66,11 +85,9 @@ Looking at the result from capturing the packets from a `docker pull`, we can se
 
 ```
 -> GET /v2/
-
   <- OK
 
 -> GET /v2/file/manifests/latest
-
   <- manifest
 
 -> GET /v2/file/blobs/sha256:f4f15...
@@ -102,6 +119,10 @@ Connection: close
 {}
 ```
 
+There's not much to focus on here aside from:
+
+- `Docker-Distribution-Api-Version`: this header *should* be set as clients *may* require this header as a way of verifying if the endpoint setves the API.
+- the body *might* be interpreted or not - there the registry implementor is able to tell the client which paths are supported, even though no spec says how that object should be written :shrug:
 
 
 
