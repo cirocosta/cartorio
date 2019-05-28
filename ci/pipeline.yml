@@ -58,6 +58,11 @@ jobs:
         file: builder-task/example.yml
         params:
           CONTEXT: builder/ci/dockerfiles/integration
+      - put: integration-image
+        inputs: [image]
+        get_params: {format: oci}
+        params:
+          image: image/image.tar
 
   - name: build
     public: true
@@ -70,23 +75,24 @@ jobs:
         - get: version
           trigger: true
         - get: integration-image
+          passed: [ 'integration-image' ]
           trigger: true
+      - task: build-linux-gnu
+        file: repository/ci/tasks/build.yml
       - in_parallel:
-          fail_fast: true
-          steps:
-            - task: build-image
-              privileged: true
-              file: repository/ci/tasks/build-image.yml
-            - task: build-linux-gnu
-              file: repository/ci/tasks/build.yml
-              params: { TARGET: x86_64-unknown-linux-gnu }
-            - task: integration
-              image: integration-image
-              privileged: true
-              file: repository/ci/tasks/integration.yml
+        - task: build-image
+          privileged: true
+          file: repository/ci/tasks/build-image.yml
+        - task: test
+          file: repository/ci/tasks/build-image.yml
+        - task: integration
+          image: integration-image
+          privileged: true
+          file: repository/ci/tasks/integration.yml
       - put: container-image
         inputs: [image, version]
         get_params: {format: oci}
         params:
           image: image/image.tar
           additional_tags: version/version
+

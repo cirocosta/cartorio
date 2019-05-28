@@ -13,9 +13,5 @@ inputs:
 - name: repository
   path: .
 
-outputs:
-- name: binary
-  path: bin
-
 run: 
-  path: cargo install --path=. --root=.
+  path: cargo test
