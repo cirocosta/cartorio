@@ -54,9 +54,10 @@ jobs:
           trigger: true
       - task: build
         privileged: true
+        input_mapping: { builder: repository }
         file: builder-task/example.yml
         params:
-          CONTEXT: repository/ci/dockerfiles/integration
+          CONTEXT: builder/ci/dockerfiles/integration
 
   - name: build
     public: true

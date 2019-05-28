@@ -6,6 +6,7 @@ FROM golang AS base
 	      apt-transport-https \
 	      ca-certificates \
 	      git \
+	      iptables \
 	      curl \
 	      gnupg2 \
 	      software-properties-common

@@ -1,10 +1,6 @@
 ---
 platform: linux
 
-image_resource:
-  type: registry-image
-  source: {repository: docker}
-
 inputs:
 - name: repository
 
@@ -13,6 +9,4 @@ run:
   args:
     - -cex
     - |
-      apk add --update -qqq bash iptables
-      repository/ci/tasks/scripts/start-docker.sh
       repository/integration/docker-tarball.sh
