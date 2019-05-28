@@ -3,10 +3,12 @@ platform: linux
 
 inputs:
 - name: repository
+- name: binary
 
 run:
   path: /bin/sh
   args:
     - -cex
     - |
+      export PATH=$(cd ./binary && pwd):$PATH
       repository/integration/docker-tarball.sh

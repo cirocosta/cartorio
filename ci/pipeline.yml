@@ -70,7 +70,6 @@ jobs:
     plan:
       - in_parallel:
         - get: repository
-          passed: [ 'integration-image' ]
           trigger: true
         - get: version
           trigger: true
