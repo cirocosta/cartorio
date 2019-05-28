@@ -10,8 +10,8 @@ TODO
 	- [x] /_live
 	- [x] GET /v2
 	- [ ] structured logging ("zero-cost"?)
-	- [ ] untar'ing of images that have been `docker save`d
-	- [ ] /v2/<name>/manifests/<reference>
+	- [x] untar'ing of images that have been `docker save`d
+	- [x] /v2/<name>/manifests/<reference>
 
 		- [x] path segmentation
 			- `split` on `/`, then manually perform the parsing
@@ -23,10 +23,10 @@ TODO
 								(KEEP TRACK OF IT)
 
 
-		- [ ] how are we going to store this on the filesystem?
+		- [x] how are we going to store this on the filesystem?
 			- do images come with this? *probably*
 
-		- [ ] GET
+		- [x] GET
 		- [ ] HEAD
 
 
