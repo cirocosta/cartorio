@@ -13,6 +13,18 @@ resources:
       branch: oci-image-layout
       ignore_paths: [ ./VERSION ]
 
+  - name: builder-task
+    type: git
+    source:
+      uri: https://github.com/concourse/builder-task
+
+  - name: integration-image
+    type: registry-image
+    source:
+      repository: cirocosta/cartorio-integration
+      username: ((docker-user))
+      password: ((docker-password))
+
   - name: container-image
     type: registry-image
     source:
@@ -31,6 +43,21 @@ resources:
 
 
 jobs:
+  - name: integration-image
+    public: true
+    serial: true
+    plan:
+      - in_parallel:
+        - get: builder-task
+          trigger: true
+        - get: repository
+          trigger: true
+      - task: build
+        privileged: true
+        file: builder-task/example.yml
+        params:
+          CONTEXT: repository/ci/dockerfiles/integration
+
   - name: build
     public: true
     serial: true
