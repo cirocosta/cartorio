@@ -13,6 +13,6 @@ run:
   args:
     - -cex
     - |
-      apk add --update -qqq bash
-      /bin/bash repository/ci/tasks/scripts/start-docker.sh
-      /bin/bash repository/ci/tasks/scripts/integration.sh
+      apk add --update -qqq bash iptables
+      repository/ci/tasks/scripts/start-docker.sh
+      repository/ci/tasks/scripts/integration.sh
