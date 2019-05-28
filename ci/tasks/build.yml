@@ -18,4 +18,4 @@ outputs:
 - name: target
 
 run: 
-  path: ./ci/tasks/scripts/build.shk
+  path: ./ci/tasks/scripts/build.sh

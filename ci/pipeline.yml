@@ -10,6 +10,7 @@ resources:
     type: git
     source:
       uri: https://((github-token))@github.com/cirocosta/cartorio
+      branch: oci-image-layout
       ignore_paths: [ ./VERSION ]
 
   - name: container-image
