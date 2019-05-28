@@ -13,6 +13,13 @@ resources:
       branch: oci-image-layout
       ignore_paths: [ ./VERSION ]
 
+  - name: integration-image-dockerfile
+    type: git
+    source:
+      uri: https://((github-token))@github.com/cirocosta/cartorio
+      branch: oci-image-layout
+      ignore_paths: [ ./ci/dockerfiles/integration/Dockerfile ]
+
   - name: builder-task
     type: git
     source:
@@ -51,6 +58,7 @@ jobs:
         - get: builder-task
           trigger: true
         - get: repository
+          resource: integration-image-dockerfile
           trigger: true
       - task: build
         privileged: true
