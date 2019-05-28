@@ -2,6 +2,21 @@
 
 `cartorio` is meant to act as a thin layer on top of content to serve that content from consumers of the registry API. 
 
+
+```
+
+                      registry
+                        API
+                         |
+ ---------.              |
+          |              |
+ content  +--- cartorio -+-->  docker pull
+          |              |
+ ---------*              |
+                         |
+```
+
+
 Here you can find an answer to "what's the minimum I should implement to serve images to container engines?"
 
 
@@ -38,6 +53,23 @@ For the purpose of describing `cartorio`, here we focus only on the later - the 
 
 What happens "on the wire" when you `docker pull $image`?
 
+
+```
+
+    REGISTRY                    DOCKERD
+
+
+                |        |
+  image1        |   ???  |
+  image2    <---+--------+----> docker pull
+  ....          |        |
+  imageN        |        |
+                |        |
+
+```
+
+
+
 Capturing the request flow, we can see the entirety of what's necessary for having container images distributed through a registry.
 
 To get started, let's create an image from a `Dockerfile` and see how what happens when we pull it from a registry.
@@ -69,35 +101,43 @@ Build this image, and we can see the layers generated:
 #
 docker build --tag file ./assets
 
+
 docker history file
 IMAGE           CREATED BY                           
 24cca6f78bbd    ADD ./file.txt /file.txt # buildkit 
 ```
 
 
-Having the image there, we can now push it to a registry and inspect the reques flow.
+Having the image there, we can now push it to a registry and inspect the request flow.
 
 
 
 ### "sniffing the wire"
 
-Looking at the result from capturing the packets from a `docker pull`, we can see the following flow:
+Looking at the result from capturing the packets from a `docker pull` (i.e., putting ourselves between the registry and the docker daemon), we can see the following flow:
 
 ```
+CLIENT                                          REGISTRY
+(dockerd)                                       (dockerhub... gcr...)
+
 -> GET /v2/
-  <- OK
+                                                  <- OK
+
 
 -> GET /v2/file/manifests/latest
-  <- manifest
+                                                  <- manifest
+
 
 -> GET /v2/file/blobs/sha256:f4f15...
-  <- blob content
+                                                  <- blob content
+
 
 -> GET /v2/file/blobs/sha256:ffb7f...
-  <- blob content
+                                                  <- blob content
 ```
 
 What's going on there?
+
 
 
 #### checking the version
