@@ -76,6 +76,7 @@ Capturing the request flow, we can see the entirety of what's necessary for havi
 To get started, let's create an image from a `Dockerfile` and see how what happens when we pull it from a registry.
 
 
+<br />
 
 ### a simple image
 
@@ -111,8 +112,8 @@ IMAGE           CREATED BY
 
 Having the image there, we can now push it to a registry and inspect the request flow.
 
-*ref: [Dockerfile reference][dockerfile-reference]*
-*ref: [`docker history` command][docker-history-command]*
+- *ref: [Dockerfile reference][dockerfile-reference]*
+- *ref: [`docker history` command][docker-history-command]*
 
 
 <br />
@@ -172,7 +173,7 @@ There's not much to focus on here aside from:
 
 With the client having validated that it's interacting with a V2 registry, it can then move forward asking for what it really cares about - the container image.
 
-*ref: [OCI Distribution Spec - API Version Check][oci-distribution-spec-api-version-check]*
+- *ref: [OCI Distribution Spec - API Version Check][oci-distribution-spec-api-version-check]*
 
 
 #### retrieving the image manifest
@@ -220,7 +221,6 @@ Here's an example of a manifest of a container image that contains a single laye
 }
 ```
 
-*ref: [OCI Image Manifest Specification][oci-image-manifest-spec]*
 
 To retrieve that manifest for a given image and a given tag, the following endpoint exists:
 
@@ -262,6 +262,10 @@ This can be seen in practice when looking at what `cartorio` does with its inter
          ├── latest -> blobstore/bucket/sha256:cceeccbdf
          └── sha256:cceeccbdf -> blobstore/bucket/sha256:cceeccbdfb546
 ```
+
+
+- *ref: [OCI Image Manifest Specification][oci-image-manifest-spec]*
+- *ref: [OCI Distribution Spec - Pulling an image manifest][oci-distribution-spec-pulling-an-image-manifest]*
 
 
 <br />
@@ -343,7 +347,7 @@ GET /v2/repo/blobs/sha256:f4f156284cbb2d...
 
 ```
 
-
+- *ref: [OCI Distribution Spec - Pulling a layer][oci-distribution-spec-pulling-a-layer]*
 
 
 [oci-image-manifest-spec]: https://github.com/opencontainers/image-spec/blob/master/manifest.md
@@ -354,3 +358,5 @@ GET /v2/repo/blobs/sha256:f4f156284cbb2d...
 [oci-distribution-spec-api-version-check]: https://github.com/opencontainers/distribution-spec/blob/39fd7ecd87a87b47a6eaf7b7faea6eb0a1c70d83/spec.md#api-version-check
 [dockerfile-reference]: https://docs.docker.com/engine/reference/builder/
 [docker-history-command]: https://docs.docker.com/engine/reference/commandline/history/
+[oci-distribution-spec-pulling-a-layer]: https://github.com/opencontainers/distribution-spec/blob/39fd7ecd87a87b47a6eaf7b7faea6eb0a1c70d83/spec.md#pulling-a-layer
+[oci-distribution-spec-pulling-an-image-manifest]: https://github.com/opencontainers/distribution-spec/blob/39fd7ecd87a87b47a6eaf7b7faea6eb0a1c70d83/spec.md#pulling-an-image-manifest
