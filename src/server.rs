@@ -103,6 +103,9 @@ pub fn serve(address: &str, blobstore: BlobStore) {
 
 /// Handles blob requests.
 ///
+/// Note: there are no permissions checking regarding the repository that the GET is performed
+/// against.
+///
 fn handle_registry_blobs(req: &Request<Body>, blobstore: &BlobStore) -> Option<Response<Body>> {
     if req.method() != &Method::GET {
         return None;
@@ -140,6 +143,9 @@ fn handle_registry_blobs(req: &Request<Body>, blobstore: &BlobStore) -> Option<R
 /// ```txt
 /// GET /v2/foo/bar/manifests/tag
 /// ```
+///
+/// Note: there are no permissions checking regarding the repository that the GET is performed
+/// against.
 ///
 fn handle_registry_manifests(req: &Request<Body>, blobstore: &BlobStore) -> Option<Response<Body>> {
     if req.method() != &Method::GET {
@@ -191,6 +197,15 @@ fn handle_registry_manifests(req: &Request<Body>, blobstore: &BlobStore) -> Opti
 }
 
 
+/// Handles requests for Registry V2 version check.
+///
+/// ```txt
+/// GET /v2
+/// ```
+///
+/// Note: even though this serve doesn't implement the `push`-side of the distribution spec, we
+/// don't advertise that through the body as that's not very standardized.
+///
 fn handle_registry_version_check(req: &Request<Body>) -> Option<Response<Body>> {
     println!("path = {}", req.uri().path());
 
@@ -212,7 +227,9 @@ fn handle_registry_version_check(req: &Request<Body>) -> Option<Response<Body>> 
     )
 }
 
- 
+
+/// If 200, it's alive lol
+///
 fn handle_liveness_check(req: &Request<Body>) -> Option<Response<Body>> {
     if req.method() != &Method::GET || req.uri().path() != "/_live" {
         return None;
