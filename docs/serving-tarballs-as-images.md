@@ -176,6 +176,8 @@ With the client having validated that it's interacting with a V2 registry, it ca
 - *ref: [OCI Distribution Spec - API Version Check][oci-distribution-spec-api-version-check]*
 
 
+<br />
+
 #### retrieving the image manifest
 
 The manifest is a JSON file that acts as the provider of:
