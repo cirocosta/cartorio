@@ -9,6 +9,7 @@
 
 - [Usage](#usage)
   - [Docker](#docker)
+  - [Kubernetes](#kubernetes)
 - [Scope](#scope)
 - [Supported image formats](#supported-image-formats)
 - [LICENSE](#license)

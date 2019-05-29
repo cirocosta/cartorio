@@ -17,7 +17,9 @@
 ```
 
 
-Here you can find an answer to "what's the minimum I should implement to serve images to container engines?", or, how does that `REGISTRY API` piece looks like in practice.
+Here you can find an answer to *"what's the minimum I should implement to serve images to container engines?"*, or, how does that `REGISTRY API` piece looks like in practice.
+
+ps.: this article assumes that you're familiar with the basic usage of Docker (creating containers, images, etc).
 
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
@@ -29,8 +31,7 @@ Here you can find an answer to "what's the minimum I should implement to serve i
   - [a simple image](#a-simple-image)
   - ["sniffing the wire"](#sniffing-the-wire)
     - [checking the version](#checking-the-version)
-- [context](#context)
-- [topics](#topics)
+    - [retrieving the image manifest](#retrieving-the-image-manifest)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -41,9 +42,9 @@ Here you can find an answer to "what's the minimum I should implement to serve i
 
 Most of the container-related tech that we use is now in the process of being standardized under the [Open Containers Initiative (OCI)](https://www.opencontainers.org/):
 
-- how to run a container? see [OCI Runtime Spec](https://github.com/opencontainers/runtime-spec)
-- how can a container image be described? see [OCI Image Spec](https://github.com/opencontainers/image-spec)
-- how could a container image be distributed? see [OCI Distribution Spec](https://github.com/opencontainers/distribution-spec)
+- how to run a container? see [OCI Runtime Spec][oci-runtime-spec]
+- how can a container image be described? see [OCI Image Spec][oci-image-spec]
+- how could a container image be distributed? see [OCI Distribution Spec][oci-distribution-spec]
 
 For the purpose of describing `cartorio`, here we focus only on the later - the distribution spec - even though pratically, that's pretty much the same as the [Docker Registry HTTP API V2](https://docs.docker.com/registry/spec/api/).
 
@@ -164,15 +165,41 @@ There's not much to focus on here aside from:
 - `Docker-Distribution-Api-Version`: this header *should* be set as clients *may* require this header as a way of verifying if the endpoint setves the API.
 - the body *might* be interpreted or not - there the registry implementor is able to tell the client which paths are supported, even though no spec says how that object should be written `¯\_(ツ)_/¯`
 
+With the client having validated that it's interacting with a V2 registry, it can then move forward asking for what it really cares about - the container image.
 
 
-## context
 
-> The docker registry is a service to manage information about docker images and enable their distribution. 
+#### retrieving the image manifest
+
+The manifest is a JSON file that acts as the provider of:
+
+1. configuration that describes metadata about that image, and
+2. pointers to where the layers that can be composed to form the filesystem
+
+```json
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+  "config": {
+    "mediaType": "application/vnd.docker.container.image.v1+json",
+    "size": 1192,
+    "digest": "sha256:922f19e5e8f8e734b76618a3e1fe4312c9f07f8d5f83b32c7f33dd9ac38decf7"
+  },
+  "layers": [
+    {
+      "mediaType": "application/vnd.docker.image.rootfs.diff.tar",
+      "size": 2048,
+      "digest": "sha256:e4f8be873d750c0f729a43cac89e1c07a347690c3a8464f35c83109b82b0aa09"
+    }
+  ]
+}
+```
+
+**ref: [OCI Image Manifest Specification][oci-image-manifest-spec]**
 
 
-## topics
+[oci-image-manifest-spec]: https://github.com/opencontainers/image-spec/blob/master/manifest.md
+[oci-runtime-spec]: https://github.com/opencontainers/runtime-spec
+[oci-image-spec]: https://github.com/opencontainers/image-spec
+[oci-distribution-spec]: https://github.com/opencontainers/distribution-spec
 
-- registry version check
-- registry manifest
-- registry blobs
