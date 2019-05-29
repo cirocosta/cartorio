@@ -32,6 +32,8 @@ ps.: this article assumes that you're familiar with the basic usage of Docker (c
   - ["sniffing the wire"](#sniffing-the-wire)
     - [checking the version](#checking-the-version)
     - [retrieving the image manifest](#retrieving-the-image-manifest)
+    - [retrieving the image's runtime config](#retrieving-the-images-runtime-config)
+    - [retrieving the layers](#retrieving-the-layers)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -350,6 +352,25 @@ GET /v2/repo/blobs/sha256:f4f156284cbb2d...
 ```
 
 - *ref: [OCI Distribution Spec - Pulling a layer][oci-distribution-spec-pulling-a-layer]*
+
+
+<br />
+
+#### retrieving the layers
+
+At the same time that the configuration is retrieved, the client who's performing the pulling can also pull the second types of blobs: layers.
+
+Just like the runtime configuration, these are content-addressable blobs than to be retrieved touching the same `blobs` endpoint:
+
+```http
+GET /v2/<name>/blobs/<digest>
+```
+
+The only difference in this case is that the blob media types (communicated in the `manifest` beforehand) are going to be different - instead of an container runtime config json, layer differences.
+
+
+<br />
+
 
 
 [oci-image-manifest-spec]: https://github.com/opencontainers/image-spec/blob/master/manifest.md
