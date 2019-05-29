@@ -1,8 +1,7 @@
 use cartorio::oci_image_layout::{OciImageIndex, OciImageLayout};
 use cartorio::blobstore::BlobStore;
 
-use tempfile::tempdir;
-
+use tempfile::tempdir; 
 
 const OCI_IMAGE_INDEX_SAMPLE: &'static str = r#"{
   "schemaVersion": 2,

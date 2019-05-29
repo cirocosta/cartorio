@@ -27,6 +27,11 @@ fn main() {
                         .takes_value(true)
                         .long("docker-save-tarball")
                         .help("Tarball to load into the registry"),
+                    Arg::with_name("concourse-image-resource")
+                        .value_name("DIRECTORY")
+                        .takes_value(true)
+                        .long("concourse-image-resource")
+                        .help("Directory where a Concourse image resource exists"),
                     Arg::with_name("oci-image-layout")
                         .value_name("DIRECTORY")
                         .takes_value(true)
@@ -72,6 +77,13 @@ fn main() {
 
                 something_loaded = true;
             }
+
+            if let Ok(concourse_image_resource) = &value_t!(m, "concourse-image-resource", String) {
+                unimplemented!("TBD");
+
+                something_loaded = true;
+            }
+
 
             if let Ok(oci_image_layout) = &value_t!(m, "oci-image-layout", String) {
                 unimplemented!("TBD");
