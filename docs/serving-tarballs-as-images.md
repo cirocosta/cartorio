@@ -176,7 +176,26 @@ The manifest is a JSON file that acts as the provider of:
 1. configuration that describes metadata about that image, and
 2. pointers to where the layers that can be composed to form the filesystem
 
-```json
+
+```
+
+  MANIFEST ---+----> what this container image is about              (metadata)
+              |
+              +----> where you can go to get the configuration
+              |      for the container that you'll create      (runtime config)
+              |      to run with the result of this image
+              |
+              *----> where you can go get the layers to mount on       (layers)
+                     top of each other to form the rootfs
+
+```
+
+
+
+Here's an example of a manifest of a container image that contains a single layer, no extra metadata, and a runtime configuration file:
+
+
+```
 {
   "schemaVersion": 2,
   "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
@@ -197,9 +216,102 @@ The manifest is a JSON file that acts as the provider of:
 
 **ref: [OCI Image Manifest Specification][oci-image-manifest-spec]**
 
+To retrieve that manifest for a given image and a given tag, the following endpoint exists:
+
+```http
+GET /v2/<name>/manifests/<reference>
+```
+
+In practice, that turns to the following:
+
+
+```
+
+               max size: 256; each field adhering to 
+               regex [a-z0-9]+(?:[._-][a-z0-9]+)*
+           .---.                
+           |   |                
+           | .-+-----------------> repository name (could be `foo/bar[/...]`
+           | | |                                    as well)
+           | | |            .----> reference
+           | | |            |   
+-> GET /v2/file/manifests/latest
+
+```
+
+Where the reference is:
+
+- either the exact digest of a manifest that was pushed, or
+- a pointer (alias) to the digest of a manifest that has been pushed.
+
+This can be seen in practice when looking at what `cartorio` does with its internal blobstore:
+
+
+```
+ blobstore
+ ├── bucket
+ │   └── sha256:cceeccbdfb5
+ └── manifests
+     └── file
+         ├── latest -> blobstore/bucket/sha256:cceeccbdf
+         └── sha256:cceeccbdf -> blobstore/bucket/sha256:cceeccbdfb546
+```
+
+
+#### retrieving the image's runtime config
+
+As you might remember, whenever you have a `Dockerfile`, you're able to set runtime configurations:
+
+- what environment variables will be available for the user (`ENV`),
+- which command to execute by default (`ENTRYPOINT` and `CMD`),
+- which directories to have a volume mounted to (`VOLUME`),
+- etc
+
+For example:
+
+```
+{ ... "config": {
+    ...
+    "AttachStderr": false,
+    "Tty": false,
+    "OpenStdin": false,
+    "StdinOnce": false,
+    "Env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    ],
+    "Cmd": null,
+    ...
+    "Labels": null
+  }, ...  }
+
+```
+
+
+All of these configurations live in the runtime configuration file that gets referenced by in the manifest:
+
+
+```txt
+MANIFEST
+  {..., "config": {
+    "mediaType": "application/vnd.docker.container.image.v1+json",
+    "size": 1192,
+    "digest": "sha256:922f19e5e8f..."
+  }}
+```
+
+As the distribution spec assumes that any blob referenced can be fetched from a blobstore in a content-addressable manner, by following that `digest` and knowing the `mediaType`, `docker` can both `fetch`, `verify` and `interpret` such configuration.
+
+The registry API then requires the existence of a blob retrieval endpoint:
+
+```http
+GET /v2/<name>/manifests/<reference>
+```
+
+
+
 
 [oci-image-manifest-spec]: https://github.com/opencontainers/image-spec/blob/master/manifest.md
 [oci-runtime-spec]: https://github.com/opencontainers/runtime-spec
 [oci-image-spec]: https://github.com/opencontainers/image-spec
 [oci-distribution-spec]: https://github.com/opencontainers/distribution-spec
-
+[docker-image-spec]: https://github.com/moby/moby/blob/master/image/spec/v1.md#image-json-description
