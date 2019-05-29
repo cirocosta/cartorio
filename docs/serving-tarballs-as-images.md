@@ -111,6 +111,8 @@ IMAGE           CREATED BY
 
 Having the image there, we can now push it to a registry and inspect the request flow.
 
+*ref: [Dockerfile reference][dockerfile-reference]*
+*ref: [`docker history` command][docker-history-command]*
 
 
 ### "sniffing the wire"
@@ -167,6 +169,7 @@ There's not much to focus on here aside from:
 
 With the client having validated that it's interacting with a V2 registry, it can then move forward asking for what it really cares about - the container image.
 
+*ref: [OCI Distribution Spec - API Version Check][oci-distribution-spec-api-version-check]*
 
 
 #### retrieving the image manifest
@@ -214,7 +217,7 @@ Here's an example of a manifest of a container image that contains a single laye
 }
 ```
 
-**ref: [OCI Image Manifest Specification][oci-image-manifest-spec]**
+*ref: [OCI Image Manifest Specification][oci-image-manifest-spec]*
 
 To retrieve that manifest for a given image and a given tag, the following endpoint exists:
 
@@ -239,9 +242,9 @@ In practice, that turns to the following:
 
 ```
 
-Where the reference is:
+Where the `reference` is either:
 
-- either the exact digest of a manifest that was pushed, or
+- the exact digest of a manifest that was pushed, or
 - a pointer (alias) to the digest of a manifest that has been pushed.
 
 This can be seen in practice when looking at what `cartorio` does with its internal blobstore:
@@ -315,3 +318,6 @@ GET /v2/<name>/manifests/<reference>
 [oci-image-spec]: https://github.com/opencontainers/image-spec
 [oci-distribution-spec]: https://github.com/opencontainers/distribution-spec
 [docker-image-spec]: https://github.com/moby/moby/blob/master/image/spec/v1.md#image-json-description
+[oci-distribution-spec-api-version-check]: https://github.com/opencontainers/distribution-spec/blob/39fd7ecd87a87b47a6eaf7b7faea6eb0a1c70d83/spec.md#api-version-check
+[dockerfile-reference]: https://docs.docker.com/engine/reference/builder/
+[docker-history-command]: https://docs.docker.com/engine/reference/commandline/history/
