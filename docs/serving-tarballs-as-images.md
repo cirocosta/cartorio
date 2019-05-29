@@ -115,6 +115,8 @@ Having the image there, we can now push it to a registry and inspect the request
 *ref: [`docker history` command][docker-history-command]*
 
 
+<br />
+
 ### "sniffing the wire"
 
 Looking at the result from capturing the packets from a `docker pull` (i.e., putting ourselves between the registry and the docker daemon), we can see the following flow:
@@ -142,6 +144,7 @@ CLIENT                                          REGISTRY
 What's going on there?
 
 
+<br />
 
 #### checking the version
 
@@ -261,6 +264,8 @@ This can be seen in practice when looking at what `cartorio` does with its inter
 ```
 
 
+<br />
+
 #### retrieving the image's runtime config
 
 As you might remember, whenever you have a `Dockerfile`, you're able to set runtime configurations:
@@ -302,12 +307,40 @@ MANIFEST
   }}
 ```
 
-As the distribution spec assumes that any blob referenced can be fetched from a blobstore in a content-addressable manner, by following that `digest` and knowing the `mediaType`, `docker` can both `fetch`, `verify` and `interpret` such configuration.
+As the [distribution spec][oci-distribution-spec] assumes that any blob referenced can be fetched from a blobstore in a content-addressable manner, by following that `digest` and knowing the `mediaType`, `docker` can:
 
-The registry API then requires the existence of a blob retrieval endpoint:
+- `fetch`, 
+- `verify` and 
+- `interpret` 
+
+such configuration.
+
+The registry API then requires the existence of a repository-scoped blob retrieval endpoint:
 
 ```http
-GET /v2/<name>/manifests/<reference>
+GET /v2/<name>/blobs/<digest>
+```
+
+Which, in practice, looks like:
+
+
+```
+
+                    digest      := algorithm ":" hex
+                    algorithm   := /[A-Fa-f0-9_+.-]+/
+                    hex         := /[A-Fa-f0-9]+/
+
+                    digest: serialized hash result consisting of an algorithm 
+                    and hex portion (compliant implementations SHOULD use 
+                                     sha256)
+                   .----------------------.	 
+                   |                      |		[cartorio]: assumes only sha256
+GET /v2/repo/blobs/sha256:f4f156284cbb2d...
+        |
+        |
+        repository that "owns" the blob
+        (useful for access control)
+
 ```
 
 
