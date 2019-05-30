@@ -12,6 +12,10 @@ pub struct ConcourseImageResource {
     ///
     root_dir: PathBuf,
 
+    /// Path to the rootfs.tgz file.
+    ///
+    rootfs_path: PathBuf,
+
     /// The parsed `resource_metadata.json` file that represents the metadata regarding the
     /// resource under `root_dir`.
     ///
@@ -30,12 +34,17 @@ impl ConcourseImageResource {
     ///
     pub fn new(dir: &Path, blobstore: BlobStore) -> Result<ConcourseImageResource> {
         let metadata_content = fs::read_to_string(dir.join("resource_metadata.json"))?;
-
         let metadata: ConcourseResourceMetadata = metadata_content.parse()?;
+
+        let rootfs_tgz = dir.join("rootfs.tgz");
+        if !rootfs_tgz.exists() {
+            failure::format_err!("no rootfs.tgz in dir %s");
+        }
 
         Ok(ConcourseImageResource{
             root_dir: dir.to_owned(),
             resource_metadata: metadata,
+            rootfs_path: rootfs_tgz,
         })
     }
 

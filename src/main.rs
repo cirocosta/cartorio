@@ -1,4 +1,5 @@
 #[macro_use] extern crate clap;
+#[macro_use] extern crate failure;
 
 use cartorio::blobstore::BlobStore;
 use cartorio::docker_saved_tarball::DockerSavedTarball;
