@@ -45,7 +45,7 @@ impl ConcourseImageResource {
     ///
     ///    dir
     ///    ├── resource_metadata.json
-    ///    └── rootfs.tgz ==> (
+    ///    └── rootfs.tgz
     ///
     /// ==>
     ///

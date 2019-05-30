@@ -1,10 +1,11 @@
 pub mod blobstore;
+pub mod concourse_image_resource;
+pub mod concourse_resource_metadata;
 pub mod digest;
 pub mod docker_saved_manifest;
 pub mod docker_saved_tarball;
-pub mod concourse_image_resource;
-pub mod concourse_resource_metadata;
+pub mod error;
+pub mod image_config;
+pub mod oci_image_layout;
 pub mod registry;
 pub mod server;
-pub mod error;
-pub mod oci_image_layout;
