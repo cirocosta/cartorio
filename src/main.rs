@@ -3,6 +3,7 @@
 
 use cartorio::blobstore::BlobStore;
 use cartorio::docker_saved_tarball::DockerSavedTarball;
+use cartorio::concourse_image_resource::ConcourseImageResource;
 use cartorio::server;
 use clap::{App, AppSettings, Arg, SubCommand};
 use std::path::Path;
@@ -61,8 +62,6 @@ fn main() {
     match matches.subcommand() {
 
         ("load", Some(m)) => {
-            let mut something_loaded = false;
-
             let blobstore = BlobStore::new(
                 Path::new(&value_t!(m, "blobstore", String).unwrap()),
             ).unwrap();
@@ -76,26 +75,23 @@ fn main() {
                     panic!("failed to load docker tarball - {}", err);
                 }
 
-                something_loaded = true;
-            }
+                return;
+            } else if let Ok(concourse_image_resource_dir) = &value_t!(m, "concourse-image-resource", String) {
+                let loader = ConcourseImageResource::new(
+                    Path::new(concourse_image_resource_dir), blobstore,
+                ).unwrap();
 
-            if let Ok(concourse_image_resource) = &value_t!(m, "concourse-image-resource", String) {
+                if let Err(err) = loader.load() {
+                    panic!("failed to concourse image resource - {}", err);
+                }
+
+                return;
+            } else if let Ok(oci_image_layout) = &value_t!(m, "oci-image-layout", String) {
                 unimplemented!("TBD");
-
-                something_loaded = true;
             }
 
-
-            if let Ok(oci_image_layout) = &value_t!(m, "oci-image-layout", String) {
-                unimplemented!("TBD");
-
-                something_loaded = true;
-            }
-
-            if !something_loaded {
-                println!("error: must specify something to be loaded");
-                std::process::exit(1);
-            }
+            println!("error: must specify something to be loaded");
+            std::process::exit(1);
         }
 
 

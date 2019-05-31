@@ -173,8 +173,7 @@ impl BlobStore {
         let mut manifest_file = std::fs::OpenOptions::new()
             .write(true)
             .create(true)
-            .open(&manifest_bucket_path)
-            .unwrap();
+            .open(&manifest_bucket_path)?;
 
         manifest_file
             .write_all(manifest_json.as_bytes())?;

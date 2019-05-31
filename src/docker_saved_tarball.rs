@@ -75,10 +75,7 @@ impl DockerSavedTarball {
     /// file to the blobstore.
     ///
     fn ingest_blob(&self, original_location: &Path, media_type: &'static str) -> Result<ManifestDescriptor> {
-        let blob_digest = digest::compute_for_file(original_location)?;
-
-        digest::store(original_location, &blob_digest)?;
-
+        let blob_digest = digest::compute_for_file_and_store(original_location)?;
         let blob_metadata = std::fs::metadata(original_location)?;
         let blob_size = blob_metadata.len();
 

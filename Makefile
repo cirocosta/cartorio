@@ -1,3 +1,6 @@
+install:
+	cargo install --path=. --force
+
 run-registry:
 	cd ./assets/registry && \
 		docker-compose up --build -d
@@ -9,5 +12,3 @@ capture:
 test:
 	cargo test
 
-install:
-	cargo install --path=. --force

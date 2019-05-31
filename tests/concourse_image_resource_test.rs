@@ -16,7 +16,7 @@ mod load {
     use super::*;
 
     #[test]
-    fn fails_without_rootfs() {
+    fn writes_layer_configuration_to_bucket() {
         let blobstore_root_dir = tempdir().unwrap();
         let blobstore = BlobStore::new(blobstore_root_dir.path()).unwrap();
 
@@ -38,9 +38,11 @@ mod load {
         .unwrap();
 
         let loader = ConcourseImageResource::new(resource_dir.path(), blobstore).unwrap();
+        assert!(loader.load().is_ok());
 
-        assert!(loader.load().is_err());
+        // TODO read the config file
     }
+
 }
 
 mod new {
@@ -74,4 +76,22 @@ mod new {
         assert!(ConcourseImageResource::new(resource_dir.path(), blobstore,).is_err());
     }
 
+    #[test]
+    fn fails_without_rootfs() {
+        let blobstore_root_dir = tempdir().unwrap();
+        let blobstore = BlobStore::new(blobstore_root_dir.path()).unwrap();
+
+        let repository_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let original_resource_dir = repository_root.join("tests/fixtures/resource");
+
+        let resource_dir = tempdir().unwrap();
+
+        fs::copy(
+            original_resource_dir.join("resource_metadata.json"),
+            resource_dir.path().join("resource_metadata.json"),
+        )
+        .unwrap();
+
+        assert!(ConcourseImageResource::new(resource_dir.path(), blobstore).is_err());
+    }
 }
