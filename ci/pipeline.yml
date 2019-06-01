@@ -18,11 +18,6 @@ resources:
       uri: https://((github-token))@github.com/cirocosta/cartorio
       ignore_paths: [ ./ci/dockerfiles/integration/Dockerfile ]
 
-  - name: builder-task
-    type: git
-    source:
-      uri: https://github.com/concourse/builder-task
-
   - name: integration-image
     type: registry-image
     source:
@@ -53,15 +48,12 @@ jobs:
     serial: true
     plan:
       - in_parallel:
-        - get: builder-task
-          trigger: true
         - get: repository
           resource: integration-image-dockerfile
           trigger: true
       - task: build
         privileged: true
-        input_mapping: { builder: repository }
-        file: builder-task/example.yml
+        file: repository/ci/tasks/build-image.yml
         params:
           CONTEXT: builder/ci/dockerfiles/integration
       - put: integration-image
