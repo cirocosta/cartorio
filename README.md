@@ -11,6 +11,8 @@ It currently supports the following filesystem formats:
 - rootfs tarball / directory
 - [Concourse](https://concourse-ci.org/) [`image_resource`](https://concourse-ci.org/tasks.html#task-image-resource)
 
+<br />
+
 **Table of Contents**
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
