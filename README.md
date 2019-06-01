@@ -34,7 +34,7 @@ It currently supports the following filesystem formats:
 
 The usage of `cartorio` requires only two steps:
 
-1. loading one or more container image(s) from a tarball, then
+1. loading one or more container image(s) from a directory or tarball, then
 2. serving those container images to those implementing the [Docker Registry HTTP API v2](https://docs.docker.com/registry/spec/api/).
 
 
