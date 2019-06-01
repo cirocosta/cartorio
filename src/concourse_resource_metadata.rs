@@ -9,8 +9,8 @@ use serde::Deserialize;
 #[serde(rename_all = "camelCase")]
 pub struct ConcourseResourceMetadata {
     #[serde(rename = "type")]
-    imageType: String,
-    version: String,
+    pub image_type: String,
+    pub version: String,
 }
 
 impl FromStr for ConcourseResourceMetadata {

@@ -9,7 +9,7 @@ use crate::concourse_resource_metadata::ConcourseResourceMetadata;
 use crate::digest;
 use crate::error::Result;
 use crate::image_config::ImageConfig;
-use crate::registry::ManifestDescriptor;
+use crate::registry::{ManifestDescriptor, Manifest};
 
 pub struct ConcourseImageResource {
     /// Root directory of the image resource.
@@ -95,11 +95,31 @@ impl ConcourseImageResource {
     ///
     pub fn load(&self) -> Result<()> {
         self.decompress_rootfs()?;
-        
-        let manifest_descriptor = self.ingest_rootfs()?;
-        let image_config = self.generate_config(manifest_descriptor.digest)?;
 
-        // create_manifest
+        let layer_descriptor = self.ingest_rootfs()?;
+        let image_config = self.generate_config(&layer_descriptor.digest)?;
+        let config_descriptor = self.ingest_config(&self.root_dir.join("config.json"))?;
+
+        let manifest = Manifest {
+            schema_version: 2,
+            media_type: "application/vnd.docker.distribution.manifest.v2+json",
+            config: config_descriptor,
+            layers: vec![layer_descriptor],
+        };
+
+        let manifest_filename = self.blobstore.add_manifest(&manifest)?;
+
+        self.blobstore.tag_manifest(
+            &manifest_filename, 
+            &self.resource_metadata.image_type, 
+            &manifest_filename,
+        );
+
+        self.blobstore.tag_manifest(
+            &manifest_filename, 
+            &self.resource_metadata.image_type, 
+            &self.resource_metadata.version,
+        );
 
         Ok(())
     }
@@ -138,15 +158,8 @@ impl ConcourseImageResource {
         Ok(())
     }
 
-    fn ingest_rootfs(&self) -> Result<ManifestDescriptor> {
-        self.ingest_blob(
-            &self.root_dir.join("rootfs.tar"),
-            "application/vnd.docker.image.rootfs.diff.tar",
-        )
-    }
-
-    fn generate_config(&self, layer_digest: String) -> Result<ImageConfig> {
-        let config = ImageConfig::new(vec![layer_digest]);
+    fn generate_config(&self, layer_digest: &str) -> Result<ImageConfig> {
+        let config = ImageConfig::new(vec![layer_digest.to_owned()]);
 
         let mut config_file = fs::OpenOptions::new()
             .write(true)
@@ -156,5 +169,19 @@ impl ConcourseImageResource {
         config_file.write_all(config.to_string().as_bytes())?;
 
         Ok(config)
+    }
+
+    fn ingest_config(&self, original_location: &Path) -> Result<ManifestDescriptor> {
+        self.ingest_blob(
+            original_location,
+            "application/vnd.docker.container.image.v1+json",
+        )
+    }
+
+    fn ingest_rootfs(&self) -> Result<ManifestDescriptor> {
+        self.ingest_blob(
+            &self.root_dir.join("rootfs.tar"),
+            "application/vnd.docker.image.rootfs.diff.tar",
+        )
     }
 }

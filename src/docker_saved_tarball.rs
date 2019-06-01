@@ -1,20 +1,18 @@
-use std::fs::File;
 use std::fs;
+use std::fs::File;
 use std::path::Path;
 
 use tempfile::tempdir;
 
-use crate::blobstore::{BlobStore};
+use crate::blobstore::BlobStore;
 use crate::digest;
 use crate::docker_saved_manifest::{DockerSavedManifest, ImageManifest};
 use crate::error::Result;
-use crate::registry::{ManifestDescriptor, Manifest};
-
+use crate::registry::{Manifest, ManifestDescriptor};
 
 /// A tarball that has been generated through `docker save`.
 ///
 pub struct DockerSavedTarball {
-
     /// Directory where the tarball has been unpacked
     /// (if so).
     ///
@@ -34,9 +32,7 @@ pub struct DockerSavedTarball {
     blobstore: BlobStore,
 }
 
-
 impl DockerSavedTarball {
-
     /// Creates a new instance of DockerSavedTarball holding a reference
     /// to a temporary location to where the tarball gets extracted to.
     ///
@@ -55,16 +51,13 @@ impl DockerSavedTarball {
         let tarball_tmp_dir = tempdir().unwrap();
         let tarball_file = File::open(tarball)?;
 
-        tar::Archive::new(tarball_file)
-            .unpack(tarball_tmp_dir.path())?;
+        tar::Archive::new(tarball_file).unpack(tarball_tmp_dir.path())?;
 
-        let manifest_content = fs::read_to_string(tarball_tmp_dir
-            .path()
-            .join("manifest.json"))?;
+        let manifest_content = fs::read_to_string(tarball_tmp_dir.path().join("manifest.json"))?;
 
         let parsed_manifest: DockerSavedManifest = manifest_content.parse()?;
 
-        Ok(DockerSavedTarball{
+        Ok(DockerSavedTarball {
             unpacked_dir: tarball_tmp_dir,
             parsed_manifest: parsed_manifest,
             blobstore: blobstore,
@@ -74,14 +67,18 @@ impl DockerSavedTarball {
     /// Ingests a blob, computing the necessary metadata and moving the
     /// file to the blobstore.
     ///
-    fn ingest_blob(&self, original_location: &Path, media_type: &'static str) -> Result<ManifestDescriptor> {
+    fn ingest_blob(
+        &self,
+        original_location: &Path,
+        media_type: &'static str,
+    ) -> Result<ManifestDescriptor> {
         let blob_digest = digest::compute_for_file_and_store(original_location)?;
         let blob_metadata = std::fs::metadata(original_location)?;
         let blob_size = blob_metadata.len();
 
         self.blobstore.add_blob(original_location)?;
 
-        Ok(ManifestDescriptor{
+        Ok(ManifestDescriptor {
             media_type: media_type,
             size: blob_size,
             digest: digest::prepend_sha_scheme(&blob_digest),
@@ -89,33 +86,33 @@ impl DockerSavedTarball {
     }
 
     fn ingest_config(&self, original_location: &Path) -> Result<ManifestDescriptor> {
-        self.ingest_blob(original_location, "application/vnd.docker.container.image.v1+json")
+        self.ingest_blob(
+            original_location,
+            "application/vnd.docker.container.image.v1+json",
+        )
     }
 
     fn ingest_layer(&self, original_location: &Path) -> Result<ManifestDescriptor> {
-        self.ingest_blob(original_location, "application/vnd.docker.image.rootfs.diff.tar")
+        self.ingest_blob(
+            original_location,
+            "application/vnd.docker.image.rootfs.diff.tar",
+        )
     }
 
     /// Loads a single image as described by a manifest.
     ///
     fn load_image(&self, manifest: &ImageManifest) -> Result<()> {
-        let config_descriptor = self.ingest_config(
-            &self.unpacked_dir.path().join(&manifest.config),
-        )?;
+        let config_descriptor =
+            self.ingest_config(&self.unpacked_dir.path().join(&manifest.config))?;
 
-        let mut layers_descriptors: Vec<ManifestDescriptor> = 
+        let mut layers_descriptors: Vec<ManifestDescriptor> =
             Vec::with_capacity(manifest.layers.len() + 1);
 
         for layer in &manifest.layers {
-            layers_descriptors.push(self.ingest_layer(
-                &self.unpacked_dir.path().join(&layer),
-            )?);
+            layers_descriptors.push(self.ingest_layer(&self.unpacked_dir.path().join(&layer))?);
         }
 
-
-        let manifest_filename = self.
-            ingest_manifest(config_descriptor, layers_descriptors)?;
-
+        let manifest_filename = self.ingest_manifest(config_descriptor, layers_descriptors)?;
 
         for repo_tag in &manifest.repo_tags {
             let mut repo_tag_splitted = repo_tag.split(':');
@@ -123,13 +120,14 @@ impl DockerSavedTarball {
             let name = repo_tag_splitted.next().unwrap();
             let tag = repo_tag_splitted.next().unwrap();
 
-            self.blobstore.tag_manifest(&manifest_filename, &name, &tag)?;
-            self.blobstore.tag_manifest(&manifest_filename, &name, &manifest_filename)?;
+            self.blobstore
+                .tag_manifest(&manifest_filename, &name, &tag)?;
+            self.blobstore
+                .tag_manifest(&manifest_filename, &name, &manifest_filename)?;
         }
 
         Ok(())
     }
-
 
     /// todo
     ///
@@ -140,10 +138,11 @@ impl DockerSavedTarball {
     ///
     /// ```
     ///
-    fn ingest_manifest(&self, 
-        config_desc: ManifestDescriptor, layers_descs: Vec<ManifestDescriptor>,
+    fn ingest_manifest(
+        &self,
+        config_desc: ManifestDescriptor,
+        layers_descs: Vec<ManifestDescriptor>,
     ) -> Result<String> {
-
         let manifest = Manifest {
             schema_version: 2,
             media_type: "application/vnd.docker.distribution.manifest.v2+json",
@@ -156,7 +155,7 @@ impl DockerSavedTarball {
         Ok(manifest_filename)
     }
 
-    /// Loads the contents of all of the images in the contents of a `docker save`d 
+    /// Loads the contents of all of the images in the contents of a `docker save`d
     /// tarball into the blobstore.
     ///
     /// ```txt
@@ -197,7 +196,6 @@ impl DockerSavedTarball {
     /// [`BlobStore`]: struct.BlobStore.html
     ///
     pub fn load(&self) -> Result<()> {
-
         for image_manifest in &self.parsed_manifest.images_manifests {
             self.load_image(&image_manifest)?;
         }
@@ -205,5 +203,3 @@ impl DockerSavedTarball {
         Ok(())
     }
 }
-
-
