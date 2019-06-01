@@ -11,7 +11,8 @@ readonly CONCOURSE_RESOURCE_URL="https://github.com/concourse/registry-image-res
 
 
 main () {
-	docker-save::populate
+	docker-save::load
+	concourse-image-resource::load
 	cartorio_serve
 	pull_from_cartorio
 }
@@ -19,6 +20,7 @@ main () {
 pull_from_cartorio () {
 	docker rmi $MACHINE_IP:5000/busybox || true
 	docker pull $MACHINE_IP:5000/busybox
+	docker pull $MACHINE_IP:5000/registry-image:0.6.0
 }
 
 cartorio_serve () {
@@ -35,8 +37,7 @@ cleanup () {
 	fi
 }
 
-
-docker-save::populate () {
+docker-save::load () {
 	local tarball_path=${TMP_DIR}/image.tar
 
 	docker pull busybox
@@ -44,8 +45,13 @@ docker-save::populate () {
 	cartorio load --blobstore=$TMP_DIR --docker-save-tarball=$tarball_path
 }
 
-concourse-image-resource::populate () {
-	curl -SL $CONCOURSE_RESOURCE_URL | tar xvzf - -C ${TMP_DIR}
+concourse-image-resource::load () {
+	local directory=${TMP_DIR}/resource_type
+
+	mkdir -p $directory
+
+	curl -SL $CONCOURSE_RESOURCE_URL | tar xvzf - -C $directory
+	cartorio load --blobstore=$TMP_DIR --concourse-image-resource=$directory
 }
 
 trap cleanup INT TERM EXIT

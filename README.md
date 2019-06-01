@@ -2,6 +2,15 @@
 
 > Serve your container images from a read-only registry.
 
+`cartorio` allows you to serve content from your local filesystem through the [Docker HTTP V2 Registry API](https://docs.docker.com/registry/spec/api/).
+
+It currently supports the following filesystem formats:
+
+- docker tarball (what you get from [`docker save`](https://docs.docker.com/engine/reference/commandline/save/))
+- [OCI image layout](https://github.com/opencontainers/image-spec/blob/master/image-layout.md)
+- rootfs tarball / directory
+- [Concourse](https://concourse-ci.org/) [`image_resource`](https://concourse-ci.org/tasks.html#task-image-resource)
+
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
