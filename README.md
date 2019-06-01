@@ -23,7 +23,6 @@ It currently supports the following filesystem formats:
   - [Docker](#docker)
   - [Kubernetes](#kubernetes)
 - [Scope](#scope)
-- [Supported image formats](#supported-image-formats)
 - [LICENSE](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -78,13 +77,6 @@ can fit multiple purposes, more interestingly:
 
 - loading images into its blobstore for serving, and
 - serving container images that have been preloaded.
-
-
-
-## Supported image formats
-
-- [x] Docker tarball
-- [ ] OCI
 
 
 
